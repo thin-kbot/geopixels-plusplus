@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         GeoPixels++
 // @description  QOL features for https://geopixels.net/ with color palette management
-// @author       thin-kbot, Observable
-// @version      0.1.1
+// @author       thin-kbot, Observable, h65e3j
+// @version      0.2.0
 // @match        https://*.geopixels.net/*
 // @namespace    https://github.com/thin-kbot
 // @homepage     https://github.com/thin-kbot/geopixels-plusplus
@@ -205,6 +205,53 @@ function colorsStringToHexArray(colorsString) {
 		log(LOG_LEVELS.debug, `Moved to (${gridX}, ${gridY})`);
 	}
 
+	//#region Sound
+	const SOUNDS = [
+		{
+			name: "Pixel placement sound",
+			variable: "soundBufferPop",
+		},
+		{
+			name: '"Paint" sound',
+			variable: "soundBufferThump",
+		},
+	];
+	let soundToChangeIdx = 0;
+
+	function loadBlobSounds() {
+		for (const s of SOUNDS) {
+			let storageItem = localStorage.getItem(`geo++_${s.variable}`);
+			if (storageItem) {
+				fetch(storageItem)
+					.then((res) => res.blob())
+					.then((blob) => setBlobAsSound(s, blob));
+			}
+		}
+	}
+
+	function saveBlobSound(s, blob) {
+		bto64(blob).then((b64s) => localStorage.setItem(`geo++_${s.variable}`, b64s));
+	}
+
+	function setBlobAsSound(s, blob) {
+		blob
+			.arrayBuffer()
+			.then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer))
+			.then((decodedAudio) => {
+				eval(`${s.variable} = decodedAudio`);
+			})
+			.catch((err) => (LOG_LEVELS.error, "Error loading audio:", err));
+	}
+
+	function bto64(blob) {
+		return new Promise((resolve) => {
+			const reader = new FileReader();
+			reader.onloadend = () => resolve(reader.result);
+			reader.readAsDataURL(blob);
+		});
+	}
+	//#endregion
+
 	//#region UI Helpers
 	function copyToClipboard(text) {
 		log(LOG_LEVELS.info, "Copied text to clipboard:\n", text);
@@ -361,15 +408,58 @@ function colorsStringToHexArray(colorsString) {
 
 	// Add goto button to menu group dropdown
 	const menuGroupDropdown = document.getElementById("menuGroupDropdown");
-	if (menuGroupDropdown)
-		menuGroupDropdown.appendChild(
+	if (menuGroupDropdown) {
+		//create hidden file input
+		const inputSoundFile = document.createElement("input");
+		inputSoundFile.type = "file";
+		inputSoundFile.style.display = "none";
+		inputSoundFile.accept = "audio/*";
+		inputSoundFile.onchange = () => {
+			let blob = new Blob([inputSoundFile.files[0]]);
+			saveBlobSound(SOUNDS[soundToChangeIdx], blob);
+			setBlobAsSound(SOUNDS[soundToChangeIdx], blob);
+		};
+		document.body.appendChild(inputSoundFile);
+
+		const selectSound = document.createElement("select");
+		selectSound.innerHTML =
+			`<option value="-1" selected disabled>Choose a sound to change</option>` +
+			SOUNDS.map((s, i) => `<option value="${i}">${s.name}</option>`).join("");
+		selectSound.classList =
+			"bg-white shadow rounded-full p-2 w-10 h-10 border border-gray-300 cursor-pointer transition transition-all absolute w-auto";
+		selectSound.style.bottom = "0";
+		selectSound.style.zIndex = "-1";
+		selectSound.style.maxWidth = "40px";
+		selectSound.onchange = () => {
+			soundToChangeIdx = selectSound.value;
+			inputSoundFile.click();
+		};
+		selectSound.onclick = (e) => {
+			e.stopPropagation();
+		};
+		selectSound.open = () => {
+			selectSound.style.maxWidth = "300px";
+			selectSound.style.zIndex = "1";
+		};
+		selectSound.close = () => {
+			selectSound.style.maxWidth = "40px";
+			selectSound.style.zIndex = "-1";
+			selectSound.value = -1;
+		};
+		menuGroupDropdown.appendChild(selectSound);
+		window.addEventListener("click", () => selectSound.close());
+
+		menuGroupDropdown.append(
 			makeMenuButton("🎯", "Go to Coordinates", () => {
 				const input = prompt("Enter coordinates (gridX,gridY) or GeoPixels URL:");
-				if (input) {
-					gotoCoords(input);
-				}
+				if (input) gotoCoords(input);
+			}),
+			makeMenuButton("🎵", "Change Sound", (e) => {
+				e.stopPropagation();
+				selectSound.open();
 			})
 		);
+	}
 
 	// Add set_both_palette button to tools group dropdown
 	const toolsGroupDropdown = document.getElementById("toolsGroupDropdown");
@@ -378,4 +468,7 @@ function colorsStringToHexArray(colorsString) {
 			makeMenuButton("🧪", "Set Both Palettes", () => promptForColors(setBothPalette))
 		);
 	//#endregion UI
+
+	loadBlobSounds();
+	log(LOG_LEVELS.info, "GeoPixels++ loaded");
 })();

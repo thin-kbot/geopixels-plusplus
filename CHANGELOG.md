@@ -8,11 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] (todo)
 
 - being able to switch from multiple ghost images
-- sound changer
 
-## [done] - 2025-10-04
+## [0.2.0] - 2025-10-05
 ### Added
 - log function
+- ability to change the sounds of the website
 
 ## [0.1.1] - 2025-10-04
 ### Changed

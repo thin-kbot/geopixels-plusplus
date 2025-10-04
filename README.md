@@ -12,6 +12,7 @@ A bunch of QOL features for [GeoPixels](https://geopixels.net/) :
 - Add buttons to the main menu :
   - `Navigation>🎯` "Go to Coordinates" : moves to given coordinates (accepts coordinates or GeoPixels URLs)
   - `Palette Tools>🧪` "Set Both Palettes" : sets user and ghost palettes simultaneously
+  - `Sound>🎵` "Change Sound" : change the sounds of the website
 
 ## installation
 1. install [Violentmonkey](https://violentmonkey.github.io/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/jinjaccalgkegednnccohejagnlnfdag?utm_source=item-share-cb)) or [Tampermonkey](https://www.tampermonkey.net/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/dhdgffkkebhmkfjojejmpbldmpobfkfo))
