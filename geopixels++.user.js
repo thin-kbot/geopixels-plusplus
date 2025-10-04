@@ -13,6 +13,24 @@
 // @grant        unsafeWindow
 // ==/UserScript==
 
+//#region Utils
+const LOG_LEVELS = {
+	error: { label: "ERR", color: "red" },
+	info: { label: "INF", color: "lime" },
+	warn: { label: "WRN", color: "yellow" },
+	debug: { label: "DBG", color: "orange" },
+};
+
+function log(lvl, ...args) {
+	console.log(
+		`%c[GeoPixels++] %c[${lvl.label}]`,
+		"color: mediumvioletred;",
+		`color:${lvl.color};`,
+		...args
+	);
+}
+//#endregion
+
 //#region Color Utils
 const cToHex = (c) => (+c).toString(16).padStart(2, "0");
 const hexToC = (h) => parseInt(h, 16);
@@ -38,7 +56,10 @@ function rgbToRgbaString({ r, g, b }) {
 }
 function parseColor(colorStr) {
 	const h = /^(?:#|FF)?([a-f\d]{6}(?:[a-f\d]{2})?|[a-f\d]{3,4})$/i.exec(colorStr);
-	if (!h) throw new Error("Invalid color format: " + colorStr);
+	if (!h) {
+		log(LOG_LEVELS.error, "Invalid color format:", colorStr);
+		return null;
+	}
 	return toFullHex(`#${h[1]}`);
 }
 Array.prototype.toOutputString = function () {
@@ -49,11 +70,11 @@ function colorsStringToHexArray(colorsString) {
 		.trim()
 		.split("\n")
 		.filter(Boolean)
-		.map((c) => parseColor(c));
+		.map((c) => parseColor(c))
+		.filter(Boolean);
 }
-//#endregion Color Utils
+//#endregion
 
-//#region Main Script
 (function () {
 	const usw = unsafeWindow;
 
@@ -62,8 +83,7 @@ function colorsStringToHexArray(colorsString) {
 
 	function isInUserPalette(hex) {
 		const is = getUserPalette().includes(hex);
-		console.log(is);
-		if (!is) console.warn("Color not in user palette:", hex);
+		if (!is) log(LOG_LEVELS.warn, "Color not in user palette:", hex);
 		return is;
 	}
 
@@ -77,7 +97,7 @@ function colorsStringToHexArray(colorsString) {
 		SetColors();
 		if (activeColors.length > 0) changeColor(Colors[activeColors[0]]);
 
-		console.log("Enabled palette updated with", activeColors.length, "colors");
+		log(LOG_LEVELS.info, "Enabled palette updated with", activeColors.length, "colors");
 	}
 	//#endregion
 
@@ -98,19 +118,19 @@ function colorsStringToHexArray(colorsString) {
 		if (ghostImageActiveColors && ghostImageActiveColors.size > 0)
 			return Array.from(ghostImageActiveColors).map((rgba) => rgbaToHex(...rgba.match(/\d+/g)));
 
-		console.log("No ghost colors enabled");
+		log(LOG_LEVELS.info, "No ghost colors enabled");
 		return "";
 	}
 
 	function isInGhostPalette(hex) {
 		const is = ghostImageColors.includes(rgbToRgbaString(hexToRgba(hex)));
-		if (!is) console.warn("Color not in ghost palette:", hex);
+		if (!is) log(LOG_LEVELS.warn, "Color not in ghost palette:", hex);
 		return is;
 	}
 
 	function setEnabledGhostPalette(hexArray) {
 		if (!ghostImageColors || ghostImageColors.length === 0) {
-			console.log("No ghost image loaded");
+			log(LOG_LEVELS.warn, "No ghost image loaded");
 			return;
 		}
 
@@ -119,7 +139,7 @@ function colorsStringToHexArray(colorsString) {
 		regenerateGhostCanvas();
 		drawGhostImageOnCanvas();
 
-		console.log("Ghost palette updated with", hexArray.length, "enabled colors");
+		log(LOG_LEVELS.info, "Ghost palette updated with", hexArray.length, "enabled colors");
 	}
 
 	function onlyShowOwnedGhostColors() {
@@ -140,21 +160,21 @@ function colorsStringToHexArray(colorsString) {
 			const urlParams = new URLSearchParams(window.location.search);
 			coordString = urlParams.get("coords") || urlParams.get("key");
 			if (!coordString) {
-				console.error("No coordinates provided and none found in URL");
+				log(LOG_LEVELS.error, "No coordinates provided and none found in URL");
 				return;
 			}
-			console.log(`Using coords from page URL: ${coordString}`);
+			log(LOG_LEVELS.debug, `Using coords from page URL: ${coordString}`);
 		} else if (input.includes("http") || input.includes("?coords=") || input.includes("?key=")) {
 			try {
 				const url = new URL(input.includes("http") ? input : "https://www.geopixels.net/" + input);
 				coordString = url.searchParams.get("coords") || url.searchParams.get("key");
 				if (coordString) {
-					console.error("No coords parameter found in URL");
+					log(LOG_LEVELS.error, "No coords parameter found in URL");
 					return;
 				}
-				console.log(`Extracted coords from URL: ${coordString}`);
+				log(LOG_LEVELS.debug, `Extracted coords from URL: ${coordString}`);
 			} catch (e) {
-				console.error("Invalid URL format");
+				log(LOG_LEVELS.log, "Invalid URL format");
 				return;
 			}
 		} else {
@@ -163,7 +183,7 @@ function colorsStringToHexArray(colorsString) {
 
 		const parts = coordString.trim().split(",");
 		if (parts.length !== 2) {
-			console.error('Invalid format. Use: "gridX,gridY"');
+			log(LOG_LEVELS.error, 'Invalid format. Use: "gridX,gridY"');
 			return;
 		}
 
@@ -171,7 +191,7 @@ function colorsStringToHexArray(colorsString) {
 		const gridY = +parts[1];
 
 		if (isNaN(gridX) || isNaN(gridY)) {
-			console.error("Invalid coordinates");
+			log(LOG_LEVELS.error, "Invalid coordinates");
 			return;
 		}
 
@@ -182,19 +202,19 @@ function colorsStringToHexArray(colorsString) {
 		map.setCenter([lngLat[0], lngLat[1]]);
 		map.setZoom(zoom);
 
-		console.log(`Moved to (${gridX}, ${gridY})`);
+		log(LOG_LEVELS.debug, `Moved to (${gridX}, ${gridY})`);
 	}
 
 	//#region UI Helpers
 	function copyToClipboard(text) {
-		console.log("Copied text to clipboard:\n", text);
+		log(LOG_LEVELS.info, "Copied text to clipboard:\n", text);
 		navigator.clipboard
 			.writeText(text)
 			.then(() => {
 				alert("Copied to clipboard!");
 			})
 			.catch((err) => {
-				console.error("Failed to copy:", err);
+				log(LOG_LEVELS.error, "Failed to copy:", err);
 				alert("Failed to copy to clipboard");
 			});
 	}
@@ -241,7 +261,7 @@ function colorsStringToHexArray(colorsString) {
 
 		submitBtn.onclick = () => {
 			const value = textarea.value.trim();
-			console.log("Submitted colors:\n", value);
+			log(LOG_LEVELS.debug, "Submitted colors:\n", value);
 			if (value) onSubmit(colorsStringToHexArray(value));
 			closeModal();
 		};
@@ -359,4 +379,3 @@ function colorsStringToHexArray(colorsString) {
 		);
 	//#endregion UI
 })();
-//#endregion

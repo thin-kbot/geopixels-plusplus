@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - being able to switch from multiple ghost images
 - sound changer
 
+## [done] - 2025-10-04
+### Added
+- log function
+
 ## [0.1.1] - 2025-10-04
 ### Changed
 - full refactor of Observable's code to be more readable and maintainable
