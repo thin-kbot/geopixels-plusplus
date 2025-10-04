@@ -1,5 +1,17 @@
 # GeoPixels++
-A bunch more QOL features for [GeoPixels](https://geopixels.net/).
+A bunch of QOL features for [GeoPixels](https://geopixels.net/) :
+- Add buttons to the ghost's UI :
+  - "Only Show Owned Ghost Colors" : activates only ghost colors you own
+  - "Get Ghost Colors" : copies all ghost colors to clipboard
+  - "Get Enabled Ghost Colors" : copies currently enabled ghost colors to clipboard
+  - "Set Enabled Ghost Colors" : set enabled ghost colors from clipboard or manual input
+- Add buttons to the shop/profile UI :
+  - "Get User Colors" : copies all user colors to clipboard
+  - "Get Enabled Colors" : copies currently enabled user colors to clipboard
+  - "Set Enabled Colors" : set enabled user colors from clipboard or manual input
+- Add buttons to the main menu :
+  - `Navigation>🎯` "Go to Coordinates" : moves to given coordinates (accepts coordinates or GeoPixels URLs)
+  - `Palette Tools>🧪` "Set Both Palettes" : sets user and ghost palettes simultaneously
 
 ## installation
 1. install [Violentmonkey](https://violentmonkey.github.io/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/jinjaccalgkegednnccohejagnlnfdag?utm_source=item-share-cb)) or [Tampermonkey](https://www.tampermonkey.net/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/dhdgffkkebhmkfjojejmpbldmpobfkfo))

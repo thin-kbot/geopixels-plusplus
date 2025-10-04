@@ -7,9 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] (todo)
 
-- add a button to copy the ghost image's hex colors to clipboard
+- being able to switch from multiple ghost images
+- sound changer
+
+## [0.1.1] - 2025-10-04
+### Changed
+- full refactor of Observable's code to be more readable and maintainable
+
+## [0.1.0] - 2025-10-04
+### Added
+- Navigation: "Go to Coordinates" button (🎯) in menu dropdown - accepts coordinates or GeoPixels URLs
+- Palette tools: "Set Both Palettes" button (🧪) in tools dropdown - sets user and ghost palettes simultaneously
+- Ghost palette controls: "Get Ghost Colors", "Get Enabled Ghost Colors", "Set Enabled Ghost Colors" buttons
+- Shop/Profile controls: "Get User Colors", "Get Enabled Colors", "Set Enabled Colors" buttons
+- Custom modal dialog for multi-line color input with textarea
 
 ## [0.0.1] - 2025-10-04
-
+### Added
 - initial release
 - add a button to the ghost's UI to only show colors you own
