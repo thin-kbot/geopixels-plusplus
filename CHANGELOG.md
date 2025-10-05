@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] (todo)
 
 - being able to switch from multiple ghost images
+- persistent map theme
+- UI theme (dark mode)
 
 ## [0.2.0] - 2025-10-05
 ### Added

@@ -18,6 +18,11 @@ A bunch of QOL features for [GeoPixels](https://geopixels.net/) :
 1. install [Violentmonkey](https://violentmonkey.github.io/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/jinjaccalgkegednnccohejagnlnfdag?utm_source=item-share-cb)) or [Tampermonkey](https://www.tampermonkey.net/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/dhdgffkkebhmkfjojejmpbldmpobfkfo))
 2. [click here](https://github.com/thin-kbot/geopixels-plusplus/raw/refs/heads/main/geopixels++.user.js)
 
+# Contributing
+Feel free to fork the repository and submit pull requests.
+If you find any issues or have suggestions for new features, please open an issue on GitHub.
+If you want to contribute but aren't sure what to do, check the [todo list](CHANGELOG.md#unreleased-todo).
+
 # Change log
 See [CHANGELOG.md](CHANGELOG.md)
 
