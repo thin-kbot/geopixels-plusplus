@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - being able to switch from multiple ghost images
 - persistent map theme
 - UI theme (dark mode)
+- make buttons less messy in the existing UI
+
+## [0.2.1] - 2025-10-05
+## Changed
+- move menu buttons to a new Group `GeoPixels++`
 
 ## [0.2.0] - 2025-10-05
 ### Added

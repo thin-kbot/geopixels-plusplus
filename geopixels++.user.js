@@ -2,7 +2,7 @@
 // @name         GeoPixels++
 // @description  QOL features for https://geopixels.net/ with color palette management
 // @author       thin-kbot, Observable, h65e3j
-// @version      0.2.0
+// @version      0.2.1
 // @match        https://*.geopixels.net/*
 // @namespace    https://github.com/thin-kbot
 // @homepage     https://github.com/thin-kbot/geopixels-plusplus
@@ -352,32 +352,46 @@ function colorsStringToHexArray(colorsString) {
 		button.title = title;
 		return button;
 	}
+	function makeMenuGroupButton(innerText, title, id, parent) {
+		const div = document.createElement("div");
+		div.className = "relative";
+		const button = makeMenuButton(innerText, title, (e) => {
+			e.stopPropagation();
+			closeAllDropdowns();
+			toggleDropdown(document.getElementById(`${id}Dropdown`));
+		});
+		button.id = `${id}Btn`;
+		const dropdown = document.createElement("div");
+		dropdown.className =
+			"dropdown-menu absolute left-0 mt-2 flex flex-col gap-2 transition-all duration-150 ease-out hidden";
+		dropdown.id = `${id}Dropdown`;
+		div.append(button, dropdown);
+		parent.appendChild(div);
+		return dropdown;
+	}
 	//#endregion
 
 	//#region UI
 	// Add buttons to ghost palette container
-	const paletteButtonsContainer = document.querySelector("#ghostColorPaletteContainer>div");
-	if (paletteButtonsContainer) {
-		paletteButtonsContainer.append(
-			makeBasicButton("Only Show Owned Ghost Colors", onlyShowOwnedGhostColors),
-			makeBasicButton("Get Ghost Colors", () =>
-				copyToClipboard(
-					getGhostImageHexColors()
-						.map((hex) => toOutputHex(hex))
-						.join("\n")
-				)
-			),
-			makeBasicButton("Get Enabled Ghost Colors", () =>
-				copyToClipboard(getEnabledGhostPalette().toOutputString())
-			),
-			makeBasicButton("Set Enabled Ghost Colors", () =>
-				promptForColors(
-					(t) => setEnabledGhostPalette(t.filter(isInGhostPalette)),
-					"Set Enabled Ghost Colors"
-				)
+	document.querySelector("#ghostColorPaletteContainer>div").append(
+		makeBasicButton("Enable Only Owned Ghost Colors", onlyShowOwnedGhostColors),
+		makeBasicButton("Get Ghost Colors", () =>
+			copyToClipboard(
+				getGhostImageHexColors()
+					.map((hex) => toOutputHex(hex))
+					.join("\n")
 			)
-		);
-	}
+		),
+		makeBasicButton("Get Enabled Ghost Colors", () =>
+			copyToClipboard(getEnabledGhostPalette().toOutputString())
+		),
+		makeBasicButton("Set Enabled Ghost Colors", () =>
+			promptForColors(
+				(t) => setEnabledGhostPalette(t.filter(isInGhostPalette)),
+				"Set Enabled Ghost Colors"
+			)
+		)
+	);
 
 	// Add buttons to shop (profile panel)
 	const shopButtonsContainer = document.querySelector(
@@ -406,67 +420,63 @@ function colorsStringToHexArray(colorsString) {
 		);
 	}
 
-	// Add goto button to menu group dropdown
-	const menuGroupDropdown = document.getElementById("menuGroupDropdown");
-	if (menuGroupDropdown) {
-		//create hidden file input
-		const inputSoundFile = document.createElement("input");
-		inputSoundFile.type = "file";
-		inputSoundFile.style.display = "none";
-		inputSoundFile.accept = "audio/*";
-		inputSoundFile.onchange = () => {
-			let blob = new Blob([inputSoundFile.files[0]]);
-			saveBlobSound(SOUNDS[soundToChangeIdx], blob);
-			setBlobAsSound(SOUNDS[soundToChangeIdx], blob);
-		};
-		document.body.appendChild(inputSoundFile);
+	//create hidden file input
+	const inputSoundFile = document.createElement("input");
+	inputSoundFile.type = "file";
+	inputSoundFile.style.display = "none";
+	inputSoundFile.accept = "audio/*";
+	inputSoundFile.onchange = () => {
+		let blob = new Blob([inputSoundFile.files[0]]);
+		saveBlobSound(SOUNDS[soundToChangeIdx], blob);
+		setBlobAsSound(SOUNDS[soundToChangeIdx], blob);
+	};
+	document.body.appendChild(inputSoundFile);
 
-		const selectSound = document.createElement("select");
-		selectSound.innerHTML =
-			`<option value="-1" selected disabled>Choose a sound to change</option>` +
-			SOUNDS.map((s, i) => `<option value="${i}">${s.name}</option>`).join("");
-		selectSound.classList =
-			"bg-white shadow rounded-full p-2 w-10 h-10 border border-gray-300 cursor-pointer transition transition-all absolute w-auto";
-		selectSound.style.bottom = "0";
-		selectSound.style.zIndex = "-1";
+	const selectSound = document.createElement("select");
+	selectSound.innerHTML =
+		`<option value="-1" selected disabled>Choose a sound to change</option>` +
+		SOUNDS.map((s, i) => `<option value="${i}">${s.name}</option>`).join("");
+	selectSound.classList =
+		"bg-white shadow rounded-full p-2 w-10 h-10 border border-gray-300 cursor-pointer transition transition-all absolute w-auto";
+	selectSound.style.bottom = "0";
+	selectSound.style.zIndex = "-1";
+	selectSound.style.maxWidth = "40px";
+	selectSound.onchange = () => {
+		soundToChangeIdx = selectSound.value;
+		inputSoundFile.click();
+	};
+	selectSound.onclick = (e) => {
+		e.stopPropagation();
+	};
+	selectSound.open = () => {
+		selectSound.style.maxWidth = "300px";
+		selectSound.style.zIndex = "1";
+	};
+	selectSound.close = () => {
 		selectSound.style.maxWidth = "40px";
-		selectSound.onchange = () => {
-			soundToChangeIdx = selectSound.value;
-			inputSoundFile.click();
-		};
-		selectSound.onclick = (e) => {
+		selectSound.style.zIndex = "-1";
+		selectSound.value = -1;
+	};
+	window.addEventListener("click", () => selectSound.close());
+
+	// Add GeoPixels++ menu group to main UI
+	makeMenuGroupButton(
+		"✚₊",
+		"GeoPixels++",
+		"geopixels-plusplus",
+		document.getElementById("controls-left")
+	).append(
+		makeMenuButton("🎯", "Go to Coordinates", () => {
+			const input = prompt("Enter coordinates (gridX,gridY) or GeoPixels URL:");
+			if (input) gotoCoords(input);
+		}),
+		makeMenuButton("🧪", "Set Both Palettes", () => promptForColors(setBothPalette)),
+		makeMenuButton("🎵", "Change Sound", (e) => {
 			e.stopPropagation();
-		};
-		selectSound.open = () => {
-			selectSound.style.maxWidth = "300px";
-			selectSound.style.zIndex = "1";
-		};
-		selectSound.close = () => {
-			selectSound.style.maxWidth = "40px";
-			selectSound.style.zIndex = "-1";
-			selectSound.value = -1;
-		};
-		menuGroupDropdown.appendChild(selectSound);
-		window.addEventListener("click", () => selectSound.close());
-
-		menuGroupDropdown.append(
-			makeMenuButton("🎯", "Go to Coordinates", () => {
-				const input = prompt("Enter coordinates (gridX,gridY) or GeoPixels URL:");
-				if (input) gotoCoords(input);
-			}),
-			makeMenuButton("🎵", "Change Sound", (e) => {
-				e.stopPropagation();
-				selectSound.open();
-			})
-		);
-	}
-
-	// Add set_both_palette button to tools group dropdown
-	const toolsGroupDropdown = document.getElementById("toolsGroupDropdown");
-	if (toolsGroupDropdown)
-		toolsGroupDropdown.appendChild(
-			makeMenuButton("🧪", "Set Both Palettes", () => promptForColors(setBothPalette))
-		);
+			selectSound.open();
+		}),
+		selectSound
+	);
 	//#endregion UI
 
 	loadBlobSounds();
