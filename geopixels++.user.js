@@ -2,7 +2,7 @@
 // @name         GeoPixels++
 // @description  QOL features for https://geopixels.net/ with color palette management
 // @author       thin-kbot, Observable, h65e3j
-// @version      0.2.1
+// @version      0.2.2
 // @match        https://*.geopixels.net/*
 // @namespace    https://github.com/thin-kbot
 // @homepage     https://github.com/thin-kbot/geopixels-plusplus
@@ -41,26 +41,18 @@ function toFullHex(hex) {
 	if (hex.length === 7) hex += "ff";
 	return hex;
 }
-function toOutputHex(hex) {
-	return toFullHex(hex).slice(0, 7);
-}
-function rgbaToHex(r, g, b, a = 255) {
-	return "#" + cToHex(r) + cToHex(g) + cToHex(b) + cToHex(a);
-}
+const toOutputHex = (hex) => toFullHex(hex).slice(0, 7);
+const rgbaToHex = (r, g, b, a = 255) => "#" + cToHex(r) + cToHex(g) + cToHex(b) + cToHex(a);
+const rgbToRgbaString = ({ r, g, b }) => `rgba(${r},${g},${b},1)`;
 function hexToRgba(hex) {
 	const h = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})?$/i.exec(hex);
 	return { r: hexToC(h[1]), g: hexToC(h[2]), b: hexToC(h[3]), a: h[4] ? hexToC(h[4]) : 255 };
 }
-function rgbToRgbaString({ r, g, b }) {
-	return `rgba(${r},${g},${b},1)`;
-}
 function parseColor(colorStr) {
-	const h = /^(?:#|FF)?([a-f\d]{6}(?:[a-f\d]{2})?|[a-f\d]{3,4})$/i.exec(colorStr);
-	if (!h) {
-		log(LOG_LEVELS.error, "Invalid color format:", colorStr);
-		return null;
-	}
-	return toFullHex(`#${h[1]}`);
+	const h = /^#?([a-f\d]{6}(?:[a-f\d]{2})?|[a-f\d]{3,4})/i.exec(colorStr);
+	if (h) return toFullHex(`#${h[1]}`);
+	log(LOG_LEVELS.error, "Invalid color format:", colorStr);
+	return null;
 }
 Array.prototype.toOutputString = function () {
 	return this.map((c) => toOutputHex(c)).join("\n");
@@ -95,7 +87,8 @@ function colorsStringToHexArray(colorsString) {
 
 		SetColorsProfile();
 		SetColors();
-		if (activeColors.length > 0) changeColor(Colors[activeColors[0]]);
+		if (activeColors.length > 0 && !colors.includes(toFullHex(pixelColor)))
+			changeColor(Colors[activeColors[0]]);
 
 		log(LOG_LEVELS.info, "Enabled palette updated with", activeColors.length, "colors");
 	}

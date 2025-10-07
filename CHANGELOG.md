@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - persistent map theme
 - UI theme (dark mode)
 - make buttons less messy in the existing UI
+- toggle ghost visibility
+
+## [0.2.2] - 2025-10-05
+## Changed
+- fix hex parsing (accept any character after the hex)
+- when changing the user's palette, if the selected color is still in the palette, keep it
 
 ## [0.2.1] - 2025-10-05
 ## Changed
