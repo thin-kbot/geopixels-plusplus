@@ -2,7 +2,7 @@
 // @name         GeoPixels++
 // @description  QOL features for https://geopixels.net/ with color palette management
 // @author       thin-kbot, Observable, h65e3j
-// @version      0.2.2
+// @version      0.2.3
 // @match        https://*.geopixels.net/*
 // @namespace    https://github.com/thin-kbot
 // @homepage     https://github.com/thin-kbot/geopixels-plusplus
@@ -338,12 +338,56 @@ function colorsStringToHexArray(colorsString) {
 			"px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition cursor-pointer";
 		return button;
 	}
+	function makeSelectButton(innerText, onClick) {
+		const button = makeButton(innerText, onClick);
+		button.className =
+			"px-2 py-1 bg-white rounded-lg shadow hover:bg-gray-300 border border-gray-300 transition cursor-pointer";
+		return button;
+	}
 	function makeMenuButton(innerText, title, onClick) {
 		const button = makeButton(innerText, onClick);
 		button.className =
 			"w-10 h-10 bg-white shadow rounded-full flex items-center justify-center hover:bg-gray-100 cursor-pointer";
 		button.title = title;
 		return button;
+	}
+	function makeSelectMenuButton(innerText, title, options, optionsTitle = "") {
+		const wrapper = document.createElement("div");
+		wrapper.className = "relative";
+		wrapper.onclick = (e) => e.stopPropagation();
+
+		const select = document.createElement("div");
+		if (optionsTitle.length) select.innerHTML = `<h2>${optionsTitle}</h2>`;
+		select.append(...options.map((opt) => makeSelectButton(opt.innerText, opt.onClick)));
+
+		select.classList =
+			"bg-white shadow rounded-xl p-2 border border-gray-300 transition transition-all absolute w-auto top-0 overflow-hidden flex flex-col gap-1";
+		select.style.height = "auto";
+		select.style.whiteSpace = "nowrap";
+		select.close = () => {
+			select.style.maxWidth = "40px";
+			select.style.maxHeight = "40px";
+			select.style.zIndex = "-1";
+			select.style.left = "0px";
+		};
+		select.open = () => {
+			select.style.maxWidth = "500px";
+			select.style.maxHeight = (optionsTitle.length ? 25 : 0) + 16 + options.length * 40 + "px";
+			select.style.zIndex = "1";
+			select.style.left = "50px";
+		};
+		select.toggle = () => {
+			if (select.style.zIndex != "-1") select.close();
+			else select.open();
+		};
+		select.close();
+		window.addEventListener("click", () => select.close());
+
+		const menuButton = makeMenuButton(innerText, title, () => {
+			select.toggle();
+		});
+		wrapper.append(menuButton, select);
+		return wrapper;
 	}
 	function makeMenuGroupButton(innerText, title, id, parent) {
 		const div = document.createElement("div");
@@ -425,33 +469,6 @@ function colorsStringToHexArray(colorsString) {
 	};
 	document.body.appendChild(inputSoundFile);
 
-	const selectSound = document.createElement("select");
-	selectSound.innerHTML =
-		`<option value="-1" selected disabled>Choose a sound to change</option>` +
-		SOUNDS.map((s, i) => `<option value="${i}">${s.name}</option>`).join("");
-	selectSound.classList =
-		"bg-white shadow rounded-full p-2 w-10 h-10 border border-gray-300 cursor-pointer transition transition-all absolute w-auto";
-	selectSound.style.bottom = "0";
-	selectSound.style.zIndex = "-1";
-	selectSound.style.maxWidth = "40px";
-	selectSound.onchange = () => {
-		soundToChangeIdx = selectSound.value;
-		inputSoundFile.click();
-	};
-	selectSound.onclick = (e) => {
-		e.stopPropagation();
-	};
-	selectSound.open = () => {
-		selectSound.style.maxWidth = "300px";
-		selectSound.style.zIndex = "1";
-	};
-	selectSound.close = () => {
-		selectSound.style.maxWidth = "40px";
-		selectSound.style.zIndex = "-1";
-		selectSound.value = -1;
-	};
-	window.addEventListener("click", () => selectSound.close());
-
 	// Add GeoPixels++ menu group to main UI
 	makeMenuGroupButton(
 		"✚₊",
@@ -464,11 +481,20 @@ function colorsStringToHexArray(colorsString) {
 			if (input) gotoCoords(input);
 		}),
 		makeMenuButton("🧪", "Set Both Palettes", () => promptForColors(setBothPalette)),
-		makeMenuButton("🎵", "Change Sound", (e) => {
-			e.stopPropagation();
-			selectSound.open();
-		}),
-		selectSound
+		makeSelectMenuButton(
+			"🎵",
+			"Change Sound",
+			SOUNDS.map((s, i) => {
+				return {
+					innerText: s.name,
+					onClick: () => {
+						soundToChangeIdx = i;
+						inputSoundFile.click();
+					},
+				};
+			}),
+			"Choose a sound to change"
+		)
 	);
 	//#endregion UI
 

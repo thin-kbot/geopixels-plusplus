@@ -12,8 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - UI theme (dark mode)
 - make buttons less messy in the existing UI
 - toggle ghost visibility
+- being able to censor part of the canvas
+- make syncable censors
+  - export/import censors
 
-## [0.2.2] - 2025-10-05
+## [0.2.3] - 2025-10-08
+## Changed
+- make a new "menuSelectButton" instead of that shit select inside the button that was there before
+
+## [0.2.2] - 2025-10-07
 ## Changed
 - fix hex parsing (accept any character after the hex)
 - when changing the user's palette, if the selected color is still in the palette, keep it
