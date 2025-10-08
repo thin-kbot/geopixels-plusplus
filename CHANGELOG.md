@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - add *time until full* next to the paint modal
 
 ## [done]
+### Changed
+- always keep the transparent 'color' selected when setting the user palette
 ### Fixed
 - fix `Cannot read properties of undefined (reading 'toLowerCase')` when setting user colors with no color selected to paint
 

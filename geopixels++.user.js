@@ -95,6 +95,7 @@ function colorsStringToHexArray(colorsString) {
 	function setEnabledUserPalette(hexArray) {
 		const colors = getUserPalette();
 		activeColors = hexArray.map((h) => colors.indexOf(h)).filter((i) => i !== -1);
+		activeColors.push(Colors.length - 1);
 
 		localStorage.setItem("activeColors", JSON.stringify(activeColors));
 
