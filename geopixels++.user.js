@@ -18,7 +18,7 @@ const LOG_LEVELS = {
 	error: { label: "ERR", color: "red" },
 	info: { label: "INF", color: "lime" },
 	warn: { label: "WRN", color: "yellow" },
-	debug: { label: "DBG", color: "orange" },
+	debug: { label: "DBG", color: "cyan" },
 };
 
 function log(lvl, ...args) {
@@ -88,7 +88,7 @@ function colorsStringToHexArray(colorsString) {
 
 	function isInUserPalette(hex) {
 		const is = getUserPalette().includes(hex);
-		if (!is) log(LOG_LEVELS.warn, "Color not in user palette:", hex);
+		if (!is) log(LOG_LEVELS.warn, "Color not in user palette:", toOutputHex(hex));
 		return is;
 	}
 
@@ -100,7 +100,7 @@ function colorsStringToHexArray(colorsString) {
 
 		SetColorsProfile();
 		SetColors();
-		if (activeColors.length > 0 && !colors.includes(toFullHex(pixelColor)))
+		if (activeColors.length > 0 && (!pixelColor || !colors.includes(toFullHex(pixelColor))))
 			changeColor(Colors[activeColors[0]]);
 
 		log(LOG_LEVELS.info, "Enabled palette updated with", activeColors.length, "colors");

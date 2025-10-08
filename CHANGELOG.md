@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - make syncable censors
   - export/import censors
 - make it possible to still pan and zoom the canvas with MMB and scroll wheel while drawing censor rects
+- keybind to replace ghost directly
+- ability to totally unbind keybinds
+- add *time until full* next to the paint modal
+
+## [done]
+### Fixed
+- fix `Cannot read properties of undefined (reading 'toLowerCase')` when setting user colors with no color selected to paint
 
 ## [0.4.0] - 2025-10-08
 ### Added
@@ -30,8 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - make a new "menuSelectButton" instead of that shit select inside the button that was there before
 
 ## [0.2.2] - 2025-10-07
-### Changed
+### Fixed
 - fix hex parsing (accept any character after the hex)
+### Changed
 - when changing the user's palette, if the selected color is still in the palette, keep it
 
 ## [0.2.1] - 2025-10-05
