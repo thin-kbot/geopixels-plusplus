@@ -2,7 +2,7 @@
 // @name         GeoPixels++
 // @description  QOL features for https://geopixels.net/ with color palette management
 // @author       thin-kbot, Observable, h65e3j
-// @version      0.3.1
+// @version      0.4.0
 // @match        https://*.geopixels.net/*
 // @namespace    https://github.com/thin-kbot
 // @homepage     https://github.com/thin-kbot/geopixels-plusplus
@@ -268,6 +268,154 @@ function colorsStringToHexArray(colorsString) {
 
 	//#region censor
 	let censorRects;
+	let censorMode = false;
+	let isDraggingCensor = false;
+	let censorStartPoint = null;
+	let tempCensorRect = null;
+
+	//#region Drawing censor
+	function canvasPointToGrid(canvas, e) {
+		const rect = canvas.getBoundingClientRect();
+		const x = e.clientX - rect.left;
+		const y = e.clientY - rect.top;
+
+		// Convert screen coordinates to map coordinates
+		const lngLat = map.unproject([x, y]);
+		const merc = turf.toMercator([lngLat.lng, lngLat.lat]);
+
+		return {
+			gridX: Math.round(merc[0] / gridSize),
+			gridY: Math.round(merc[1] / gridSize),
+		};
+	}
+
+	function enableCensorMode() {
+		censorMode = true;
+		const censorCanvas = document.getElementById("censor-canvas");
+		if (censorCanvas) {
+			censorCanvas.style.pointerEvents = "auto";
+			censorCanvas.style.cursor = "crosshair";
+		}
+
+		log(LOG_LEVELS.debug, "Censor mode enabled");
+	}
+
+	function disableCensorMode() {
+		censorMode = false;
+		isDraggingCensor = false;
+		censorStartPoint = null;
+		tempCensorRect = null;
+
+		const censorCanvas = document.getElementById("censor-canvas");
+		if (censorCanvas) {
+			censorCanvas.style.pointerEvents = "none";
+			censorCanvas.style.cursor = "auto";
+		}
+
+		drawCensorRects();
+		log(LOG_LEVELS.debug, "Censor mode disabled");
+	}
+
+	function toggleCensorMode() {
+		if (censorMode) disableCensorMode();
+		else enableCensorMode();
+	}
+
+	function setupCensorCanvasEvents(canvas) {
+		canvas.addEventListener("mousedown", (e) => {
+			if (!censorMode || e.button !== 0) return;
+
+			e.preventDefault();
+			e.stopPropagation();
+
+			isDraggingCensor = true;
+			const point = canvasPointToGrid(canvas, e);
+			censorStartPoint = point;
+			tempCensorRect = {
+				gridX: point.gridX,
+				gridY: point.gridY,
+				width: 0,
+				height: 0,
+			};
+		});
+
+		canvas.addEventListener("mousemove", (e) => {
+			if (!censorMode || !isDraggingCensor || !censorStartPoint) return;
+
+			e.preventDefault();
+			e.stopPropagation();
+
+			const point = canvasPointToGrid(canvas, e);
+
+			const minX = Math.min(censorStartPoint.gridX, point.gridX);
+			const maxX = Math.max(censorStartPoint.gridX, point.gridX);
+			const minY = Math.min(censorStartPoint.gridY, point.gridY);
+			const maxY = Math.max(censorStartPoint.gridY, point.gridY);
+
+			tempCensorRect = {
+				gridX: minX,
+				gridY: minY,
+				width: maxX - minX + 1,
+				height: maxY - minY + 1,
+			};
+
+			drawCensorRects();
+		});
+
+		canvas.addEventListener("mouseup", (e) => {
+			if (!censorMode || !isDraggingCensor || e.button !== 0) return;
+
+			e.preventDefault();
+			e.stopPropagation();
+
+			if (tempCensorRect && (tempCensorRect.width > 0 || tempCensorRect.height > 0)) {
+				addCensorRect(tempCensorRect);
+
+				log(
+					LOG_LEVELS.debug,
+					`Created censor rect: ${tempCensorRect.gridX},${tempCensorRect.gridY} ${tempCensorRect.width}x${tempCensorRect.height}`
+				);
+			}
+
+			isDraggingCensor = false;
+			censorStartPoint = null;
+			tempCensorRect = null;
+
+			drawCensorRects();
+		});
+
+		canvas.addEventListener("mouseleave", () => {
+			if (isDraggingCensor) {
+				isDraggingCensor = false;
+				censorStartPoint = null;
+				tempCensorRect = null;
+				drawCensorRects();
+			}
+		});
+	}
+
+	function drawCensorRect(ctx, rect, gSize, color) {
+		const topLeftMerc = [rect.gridX * gSize, (rect.gridY + rect.height) * gSize];
+		const bottomRightMerc = [(rect.gridX + rect.width) * gSize, rect.gridY * gSize];
+
+		const topLeftScreen = map.project(turf.toWgs84(topLeftMerc));
+		const bottomRightScreen = map.project(turf.toWgs84(bottomRightMerc));
+
+		const screenWidth = Math.abs(bottomRightScreen.x - topLeftScreen.x);
+		const screenHeight = Math.abs(bottomRightScreen.y - topLeftScreen.y);
+
+		if (
+			topLeftScreen.x + screenWidth < 0 ||
+			topLeftScreen.x > ctx.canvas.width ||
+			topLeftScreen.y + screenHeight < 0 ||
+			topLeftScreen.y > ctx.canvas.height
+		)
+			return;
+
+		ctx.fillStyle = color;
+		ctx.fillRect(topLeftScreen.x, topLeftScreen.y, screenWidth, screenHeight);
+	}
+	//#endregion
 
 	function ensureCensorCanvas() {
 		let canvas = document.getElementById("censor-canvas");
@@ -279,6 +427,7 @@ function colorsStringToHexArray(colorsString) {
 			canvas.style.left = "0";
 			canvas.style.pointerEvents = "none";
 			document.body.appendChild(canvas);
+			setupCensorCanvasEvents(canvas);
 		}
 		return canvas;
 	}
@@ -313,13 +462,12 @@ function colorsStringToHexArray(colorsString) {
 		const rects = getCensorRects();
 		if (!rects.length) return;
 		rects.forEach((rect) => {
-			const mercStart = [rect.gridX * gSize, rect.gridY * gSize];
-			const mercEnd = [(rect.gridX + rect.width) * gSize, (rect.gridY + rect.height) * gSize];
-			const startPt = map.project(turf.toWgs84(mercStart));
-			const endPt = map.project(turf.toWgs84(mercEnd));
-			ctx.fillStyle = "black";
-			ctx.fillRect(startPt.x, startPt.y, endPt.x - startPt.x, endPt.y - startPt.y);
+			drawCensorRect(ctx, rect, gSize, "#000");
 		});
+
+		if (censorMode && isDraggingCensor && tempCensorRect) {
+			drawCensorRect(ctx, tempCensorRect, gSize, "#0007");
+		}
 	}
 
 	function waitForMap(callback) {
@@ -601,7 +749,7 @@ function colorsStringToHexArray(colorsString) {
 		),
 		makeSelectMenuButton("🚫", "Censor", [
 			{
-				innerText: "add a new censor",
+				innerText: "add a new censor manually",
 				onClick: () => {
 					const input = prompt("Enter coordinates and size (gridX,gridY,width,height): ");
 					if (!input) return;
@@ -611,6 +759,12 @@ function colorsStringToHexArray(colorsString) {
 						return;
 					}
 					addCensorRect({ gridX, gridY, width, height });
+				},
+			},
+			{
+				innerText: "Toggle censor mode",
+				onClick: async () => {
+					toggleCensorMode();
 				},
 			},
 			{

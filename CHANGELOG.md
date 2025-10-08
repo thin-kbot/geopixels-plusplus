@@ -6,7 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased] (todo)
-
 - being able to switch from multiple ghost images
 - persistent map theme
 - UI theme (dark mode)
@@ -14,27 +13,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - toggle ghost visibility
 - make syncable censors
   - export/import censors
-- better censors management
+- make it possible to still pan and zoom the canvas with MMB and scroll wheel while drawing censor rects
 
-## [0.3.1] - 2025-10-08
-## Moddified
+## [0.4.0] - 2025-10-08
+### Added
+- Added the ability to draw the censor rectangles directly on the canvas
+### Changed
 - Added a `createModal` function and modified `createColorInputModal` to use it for a more modular code
 
 ## [0.3.0] - 2025-10-08
-## Added
+### Added
 - being able to censor part of the canvas
 
 ## [0.2.3] - 2025-10-08
-## Changed
+### Changed
 - make a new "menuSelectButton" instead of that shit select inside the button that was there before
 
 ## [0.2.2] - 2025-10-07
-## Changed
+### Changed
 - fix hex parsing (accept any character after the hex)
 - when changing the user's palette, if the selected color is still in the palette, keep it
 
 ## [0.2.1] - 2025-10-05
-## Changed
+### Changed
 - move menu buttons to a new Group `GeoPixels++`
 
 ## [0.2.0] - 2025-10-05

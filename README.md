@@ -14,6 +14,9 @@ A bunch of QOL features for [GeoPixels](https://geopixels.net/) :
   - `🧪` "Set Both Palettes" : sets user and ghost palettes simultaneously
   - `🎵` "Change Sound" : change the sounds of the website
   - `🚫` "Censor" : ability to censor part of the canvas
+    - "add a new censor manually" : input manually the parameters of your censor
+    - "Toggle censor mode" : enter "censor mode" => draw censor rectangles directly on the canvas
+    - "clear censors" : delete all you censor rectangles
 
 ## installation
 1. install [Violentmonkey](https://violentmonkey.github.io/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/jinjaccalgkegednnccohejagnlnfdag)) or [Tampermonkey](https://www.tampermonkey.net/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/dhdgffkkebhmkfjojejmpbldmpobfkfo))
