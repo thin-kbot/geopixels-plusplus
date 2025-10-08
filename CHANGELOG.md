@@ -12,9 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - UI theme (dark mode)
 - make buttons less messy in the existing UI
 - toggle ghost visibility
-- being able to censor part of the canvas
 - make syncable censors
   - export/import censors
+- better censors management
+
+## [0.3.0] - 2025-10-08
+## Added
+- being able to censor part of the canvas
 
 ## [0.2.3] - 2025-10-08
 ## Changed

@@ -2,7 +2,7 @@
 // @name         GeoPixels++
 // @description  QOL features for https://geopixels.net/ with color palette management
 // @author       thin-kbot, Observable, h65e3j
-// @version      0.2.3
+// @version      0.3.0
 // @match        https://*.geopixels.net/*
 // @namespace    https://github.com/thin-kbot
 // @homepage     https://github.com/thin-kbot/geopixels-plusplus
@@ -28,6 +28,19 @@ function log(lvl, ...args) {
 		`color:${lvl.color};`,
 		...args
 	);
+}
+
+const STORAGE_KEYS = {
+	censor: "geo++_censorRects",
+};
+
+function isJsonString(str) {
+	try {
+		JSON.parse(str);
+	} catch {
+		return false;
+	}
+	return true;
 }
 //#endregion
 
@@ -243,6 +256,77 @@ function colorsStringToHexArray(colorsString) {
 			reader.readAsDataURL(blob);
 		});
 	}
+	//#endregion
+
+	//#region censor
+	let censorRects;
+
+	function ensureCensorCanvas() {
+		let canvas = document.getElementById("censor-canvas");
+		if (!canvas) {
+			canvas = document.createElement("canvas");
+			canvas.id = "censor-canvas";
+			canvas.style.position = "absolute";
+			canvas.style.top = "0";
+			canvas.style.left = "0";
+			canvas.style.pointerEvents = "none";
+			document.body.appendChild(canvas);
+		}
+		return canvas;
+	}
+
+	function getCensorRects() {
+		if (!Array.isArray(censorRects)) {
+			const c = localStorage.getItem(STORAGE_KEYS.censor);
+			censorRects = c && isJsonString(c) ? JSON.parse(c) : [];
+		}
+		return censorRects;
+	}
+	function saveCensorRects(r) {
+		censorRects = r;
+		localStorage.setItem(STORAGE_KEYS.censor, JSON.stringify(r));
+		drawCensorRects();
+	}
+	const addCensorRect = (rect) => saveCensorRects([...getCensorRects(), rect]);
+
+	function drawCensorRects() {
+		const canvas = ensureCensorCanvas();
+		const pixelCanvas = document.getElementById("pixel-canvas");
+		if (!pixelCanvas) return;
+
+		canvas.width = pixelCanvas.width;
+		canvas.height = pixelCanvas.height;
+		const ctx = canvas.getContext("2d");
+
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+		const gSize = usw.gridSize || gridSize || 25;
+
+		const rects = getCensorRects();
+		if (!rects.length) return;
+		rects.forEach((rect) => {
+			const mercStart = [rect.gridX * gSize, rect.gridY * gSize];
+			const mercEnd = [(rect.gridX + rect.width) * gSize, (rect.gridY + rect.height) * gSize];
+			const startPt = map.project(turf.toWgs84(mercStart));
+			const endPt = map.project(turf.toWgs84(mercEnd));
+			ctx.fillStyle = "black";
+			ctx.fillRect(startPt.x, startPt.y, endPt.x - startPt.x, endPt.y - startPt.y);
+		});
+	}
+
+	function waitForMap(callback) {
+		let tries = 0;
+		function check() {
+			if (map && map.on && map.getContainer) callback();
+			else if (tries++ < 100) setTimeout(check, 100);
+		}
+		check();
+	}
+
+	waitForMap(() => {
+		["move", "rotate", "zoom"].forEach((ev) => map.on(ev, drawCensorRects));
+		new ResizeObserver(drawCensorRects).observe(map.getContainer());
+	});
 	//#endregion
 
 	//#region UI Helpers
@@ -494,7 +578,26 @@ function colorsStringToHexArray(colorsString) {
 				};
 			}),
 			"Choose a sound to change"
-		)
+		),
+		makeSelectMenuButton("🚫", "Censor", [
+			{
+				innerText: "add a new censor",
+				onClick: () => {
+					const input = prompt("Enter coordinates and size (gridX,gridY,width,height): ");
+					if (!input) return;
+					const [gridX, gridY, width, height] = input.split(",").map(Number);
+					if (isNaN(gridX) || isNaN(gridY) || isNaN(width) || isNaN(height)) {
+						alert("Invalid format. Use: gridX,gridY,width,height");
+						return;
+					}
+					addCensorRect({ gridX, gridY, width, height });
+				},
+			},
+			{
+				innerText: "clear censors",
+				onClick: () => saveCensorRects(),
+			},
+		])
 	);
 	//#endregion UI
 
