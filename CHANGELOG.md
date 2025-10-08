@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - export/import censors
 - better censors management
 
+## [0.3.1] - 2025-10-08
+## Moddified
+- Added a `createModal` function and modified `createColorInputModal` to use it for a more modular code
+
 ## [0.3.0] - 2025-10-08
 ## Added
 - being able to censor part of the canvas

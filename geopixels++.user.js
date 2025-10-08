@@ -2,7 +2,7 @@
 // @name         GeoPixels++
 // @description  QOL features for https://geopixels.net/ with color palette management
 // @author       thin-kbot, Observable, h65e3j
-// @version      0.3.0
+// @version      0.3.1
 // @match        https://*.geopixels.net/*
 // @namespace    https://github.com/thin-kbot
 // @homepage     https://github.com/thin-kbot/geopixels-plusplus
@@ -158,7 +158,26 @@ function colorsStringToHexArray(colorsString) {
 	}
 	//#endregion
 
-	function gotoCoords(input = "", zoom = 16) {
+	//#region Navigation
+	function gotoCoords({ x, y }) {
+		const gSize = usw.gridSize || gridSize || 25;
+
+		if (isNaN(x) || isNaN(y)) {
+			log(LOG_LEVELS.error, "Invalid coordinates");
+			return;
+		}
+
+		const mercX = x * gSize;
+		const mercY = y * gSize;
+		const lngLat = turf.toWgs84([mercX, mercY]);
+
+		map.setCenter([lngLat[0], lngLat[1]]);
+		map.setZoom(zoom);
+
+		log(LOG_LEVELS.debug, `Moved to (${x}, ${y})`);
+	}
+
+	function gotoFromInput(input = "", zoom = 16) {
 		const gSize = usw.gridSize || gridSize || 25;
 		let coordString;
 
@@ -196,20 +215,9 @@ function colorsStringToHexArray(colorsString) {
 		const gridX = +parts[0];
 		const gridY = +parts[1];
 
-		if (isNaN(gridX) || isNaN(gridY)) {
-			log(LOG_LEVELS.error, "Invalid coordinates");
-			return;
-		}
-
-		const mercX = gridX * gSize;
-		const mercY = gridY * gSize;
-		const lngLat = turf.toWgs84([mercX, mercY]);
-
-		map.setCenter([lngLat[0], lngLat[1]]);
-		map.setZoom(zoom);
-
-		log(LOG_LEVELS.debug, `Moved to (${gridX}, ${gridY})`);
+		gotoCoords({ x: gridX, y: gridY });
 	}
+	//#endregion
 
 	//#region Sound
 	const SOUNDS = [
@@ -343,19 +351,13 @@ function colorsStringToHexArray(colorsString) {
 			});
 	}
 
-	function createColorInputModal(title, placeholder, onSubmit) {
-		// Create modal overlay
+	function createModal(title, innerHTML, onSubmit, submitBtTxt = "Submit") {
 		const modal = document.createElement("div");
 		modal.className = "fixed inset-0 flex items-center justify-center bg-black/50 z-[100]";
 		modal.innerHTML = `
 			<div class="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl">
 				<h2 class="mb-4 text-xl font-semibold">${title}</h2>
-				<textarea
-					id="colorInputTextarea"
-					placeholder="${placeholder}"
-					class="w-full p-3 border-2 border-gray-200 rounded-lg font-mono text-sm resize-vertical box-border"
-					style="height: 200px;"
-				></textarea>
+				${innerHTML}
 				<div class="mt-4 flex gap-2 justify-end">
 					<button
 						id="colorInputCancel"
@@ -365,17 +367,14 @@ function colorsStringToHexArray(colorsString) {
 					<button
 						id="colorInputSubmit"
 						class="px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer font-medium"
-					>Submit</button>
+					>${submitBtTxt}</button>
 				</div>
 			</div>
 		`;
 		document.body.appendChild(modal);
 
-		const textarea = modal.querySelector("#colorInputTextarea");
 		const cancelBtn = modal.querySelector("#colorInputCancel");
 		const submitBtn = modal.querySelector("#colorInputSubmit");
-
-		setTimeout(() => textarea.focus(), 100);
 
 		const closeModal = () => {
 			document.body.removeChild(modal);
@@ -384,9 +383,7 @@ function colorsStringToHexArray(colorsString) {
 		cancelBtn.onclick = closeModal;
 
 		submitBtn.onclick = () => {
-			const value = textarea.value.trim();
-			log(LOG_LEVELS.debug, "Submitted colors:\n", value);
-			if (value) onSubmit(colorsStringToHexArray(value));
+			onSubmit();
 			closeModal();
 		};
 
@@ -400,12 +397,35 @@ function colorsStringToHexArray(colorsString) {
 			if (e.key === "Escape") closeModal();
 		};
 		document.addEventListener("keydown", escHandler);
+
+		return modal;
+	}
+
+	function createColorInputModal(title, placeholder, onSubmit) {
+		const modal = createModal(
+			title,
+			`<textarea
+					id="colorInputTextarea"
+					placeholder="${placeholder}"
+					class="w-full p-3 border-2 border-gray-200 rounded-lg font-mono text-sm resize-vertical box-border"
+					style="height: 200px;"
+				></textarea>`,
+			() => {
+				const value = textarea.value.trim();
+				log(LOG_LEVELS.debug, "Submitted colors:\n", value);
+				if (value) onSubmit(colorsStringToHexArray(value));
+			}
+		);
+
+		const textarea = modal.querySelector("#colorInputTextarea");
+
+		setTimeout(() => textarea.focus(), 100);
 	}
 
 	function promptForColors(action, title = "Enter colors") {
 		createColorInputModal(
 			title,
-			"Enter colors (one per line)\nFormat: RRGGBB (or regex (FF|#)?RRGGBB(.+)?)\nExample:\nFF0000\n#00FF00\n0000FF00",
+			"Enter colors (one per line)\nFormat: '#?RRGGBB(.+)?'\nExample:\nFF0000\n#00FF00\n0000FF00",
 			action
 		);
 	}
@@ -562,7 +582,7 @@ function colorsStringToHexArray(colorsString) {
 	).append(
 		makeMenuButton("🎯", "Go to Coordinates", () => {
 			const input = prompt("Enter coordinates (gridX,gridY) or GeoPixels URL:");
-			if (input) gotoCoords(input);
+			if (input) gotoFromInput(input);
 		}),
 		makeMenuButton("🧪", "Set Both Palettes", () => promptForColors(setBothPalette)),
 		makeSelectMenuButton(
