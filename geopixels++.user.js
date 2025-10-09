@@ -13,7 +13,7 @@
 // @grant        unsafeWindow
 // ==/UserScript==
 
-//#region Utils
+//#region Global variables
 const LOG_LEVELS = {
 	error: { label: "ERR", color: "red" },
 	info: { label: "INF", color: "lime" },
@@ -21,6 +21,50 @@ const LOG_LEVELS = {
 	debug: { label: "DBG", color: "cyan" },
 };
 
+const STORAGE_KEYS = {
+	censor: "geo++_censorRects",
+	keybinds: "geo++_keybinds",
+};
+
+const SOUNDS = [
+	{
+		name: "Pixel placement sound",
+		variable: "soundBufferPop",
+	},
+	{
+		name: '"Paint" sound',
+		variable: "soundBufferThump",
+	},
+];
+let soundToChangeIdx = 0;
+
+let censorRects;
+let censorMode = false;
+let isDraggingCensor = false;
+let censorStartPoint = null;
+let tempCensorRect = null;
+
+const KEY_BINDINGS = {
+	toggleGhost: {
+		text: "Toggle ghost image",
+		keydown: () => document.getElementById("ghost-canvas").toggleAttribute("hidden"),
+	},
+	placeGhost: {
+		text: "Set ghost image's top left",
+		keydown: () => {
+			const pos = screenPointToGrid(document.getElementById("pixel-canvas"), mouseX, mouseY);
+			ghostImageTopLeft = pos;
+			localStorage.setItem("ghostImageCoords", JSON.stringify(pos));
+			log(LOG_LEVELS.info, "Ghost image position set.");
+			drawGhostImageOnCanvas();
+		},
+	},
+};
+DEFAULT_KEY_BINDINGS = { t: "toggleGhost", e: "placeGhost" };
+let mouseX, mouseY;
+//#endregion Global variables
+
+//#region Utils
 function log(lvl, ...args) {
 	console.log(
 		`%c[GeoPixels++] %c[${lvl.label}]`,
@@ -29,11 +73,6 @@ function log(lvl, ...args) {
 		...args
 	);
 }
-
-const STORAGE_KEYS = {
-	censor: "geo++_censorRects",
-	keybinds: "geo++_keybinds",
-};
 
 function isJsonString(str) {
 	try {
@@ -56,7 +95,7 @@ function screenPointToGrid(canvas, mX, mY) {
 		gridY: Math.round(merc[1] / gridSize),
 	};
 }
-//#endregion
+//#endregion Utils
 
 //#region Color Utils
 const cToHex = (c) => (+c).toString(16).padStart(2, "0");
@@ -92,7 +131,7 @@ function colorsStringToHexArray(colorsString) {
 		.map((c) => parseColor(c))
 		.filter(Boolean);
 }
-//#endregion
+//#endregion Color Utils
 
 (function () {
 	const usw = unsafeWindow;
@@ -120,7 +159,7 @@ function colorsStringToHexArray(colorsString) {
 
 		log(LOG_LEVELS.info, "Enabled palette updated with", activeColors.length, "colors");
 	}
-	//#endregion
+	//#endregion User Palette Functions
 
 	//#region Ghost Image Palette Functions
 	function getGhostImageHexColors() {
@@ -171,7 +210,7 @@ function colorsStringToHexArray(colorsString) {
 		setEnabledUserPalette(s.filter(isInUserPalette));
 		setEnabledGhostPalette(s.filter(isInGhostPalette));
 	}
-	//#endregion
+	//#endregion Ghost Image Palette Functions
 
 	//#region Navigation
 	function gotoCoords({ x, y }) {
@@ -232,34 +271,15 @@ function colorsStringToHexArray(colorsString) {
 
 		gotoCoords({ x: gridX, y: gridY });
 	}
-	//#endregion
+	//#endregion Navigation
 
 	//#region Sound
-	const SOUNDS = [
-		{
-			name: "Pixel placement sound",
-			variable: "soundBufferPop",
-		},
-		{
-			name: '"Paint" sound',
-			variable: "soundBufferThump",
-		},
-	];
-	let soundToChangeIdx = 0;
-
-	function loadBlobSounds() {
-		for (const s of SOUNDS) {
-			let storageItem = localStorage.getItem(`geo++_${s.variable}`);
-			if (storageItem) {
-				fetch(storageItem)
-					.then((res) => res.blob())
-					.then((blob) => setBlobAsSound(s, blob));
-			}
-		}
-	}
-
-	function saveBlobSound(s, blob) {
-		bto64(blob).then((b64s) => localStorage.setItem(`geo++_${s.variable}`, b64s));
+	function bto64(blob) {
+		return new Promise((resolve) => {
+			const reader = new FileReader();
+			reader.onloadend = () => resolve(reader.result);
+			reader.readAsDataURL(blob);
+		});
 	}
 
 	function setBlobAsSound(s, blob) {
@@ -272,22 +292,25 @@ function colorsStringToHexArray(colorsString) {
 			.catch((err) => (LOG_LEVELS.error, "Error loading audio:", err));
 	}
 
-	function bto64(blob) {
-		return new Promise((resolve) => {
-			const reader = new FileReader();
-			reader.onloadend = () => resolve(reader.result);
-			reader.readAsDataURL(blob);
-		});
+	function saveBlobSound(s, blob) {
+		setBlobAsSound(s, blob);
+		bto64(blob).then((b64s) => localStorage.setItem(`geo++_${s.variable}`, b64s));
 	}
-	//#endregion
 
-	//#region censor
-	let censorRects;
-	let censorMode = false;
-	let isDraggingCensor = false;
-	let censorStartPoint = null;
-	let tempCensorRect = null;
+	function loadBlobSounds() {
+		for (const s of SOUNDS) {
+			let storageItem = localStorage.getItem(`geo++_${s.variable}`);
+			if (storageItem) {
+				fetch(storageItem)
+					.then((res) => res.blob())
+					.then((blob) => setBlobAsSound(s, blob));
+			}
+		}
+	}
+	loadBlobSounds();
+	//#endregion Sound
 
+	//#region Censor
 	function isValidCensorConfig(json) {
 		return (
 			Array.isArray(json) &&
@@ -427,7 +450,7 @@ function colorsStringToHexArray(colorsString) {
 		ctx.fillStyle = color;
 		ctx.fillRect(topLeftScreen.x, topLeftScreen.y, screenWidth, screenHeight);
 	}
-	//#endregion
+	//#endregion Drawing censor
 
 	function ensureCensorCanvas() {
 		let canvas = document.getElementById("censor-canvas");
@@ -495,27 +518,9 @@ function colorsStringToHexArray(colorsString) {
 		["move", "rotate", "zoom"].forEach((ev) => map.on(ev, drawCensorRects));
 		new ResizeObserver(drawCensorRects).observe(map.getContainer());
 	});
-	//#endregion
+	//#endregion Censor
 
 	//#region keybind
-	const KEY_BINDINGS = {
-		toggleGhost: {
-			text: "Toggle ghost image",
-			keydown: () => document.getElementById("ghost-canvas").toggleAttribute("hidden"),
-		},
-		placeGhost: {
-			text: "Set ghost image's top left",
-			keydown: () => {
-				const pos = screenPointToGrid(document.getElementById("pixel-canvas"), mouseX, mouseY);
-				ghostImageTopLeft = pos;
-				localStorage.setItem("ghostImageCoords", JSON.stringify(pos));
-				log(LOG_LEVELS.info, "Ghost image position set.");
-				drawGhostImageOnCanvas();
-			},
-		},
-	};
-
-	let mouseX, mouseY;
 	document.addEventListener("mousemove", (e) => {
 		mouseX = e.clientX;
 		mouseY = e.clientY;
@@ -528,8 +533,7 @@ function colorsStringToHexArray(colorsString) {
 		localStorage.setItem(STORAGE_KEYS.keybinds, JSON.stringify(kb));
 	}
 
-	if (!localStorage.getItem(STORAGE_KEYS.keybinds))
-		saveKeybinds({ t: "toggleGhost", e: "placeGhost" });
+	if (!localStorage.getItem(STORAGE_KEYS.keybinds)) saveKeybinds(DEFAULT_KEY_BINDINGS);
 
 	document.getElementById("toggleKeybinds").addEventListener("click", () => {
 		for (const key in keybinds) {
@@ -563,7 +567,7 @@ function colorsStringToHexArray(colorsString) {
 			});
 			saveKeybinds(newKeybinds);
 		});
-	//#enregion
+	//#endregion keybind
 
 	//#region UI Helpers
 	function copyToClipboard(text) {
@@ -738,7 +742,7 @@ function colorsStringToHexArray(colorsString) {
 		parent.appendChild(div);
 		return dropdown;
 	}
-	//#endregion
+	//#endregion UI Helpers
 
 	//#region UI
 	// Add buttons to ghost palette container
@@ -797,7 +801,6 @@ function colorsStringToHexArray(colorsString) {
 	inputSoundFile.onchange = () => {
 		let blob = new Blob([inputSoundFile.files[0]]);
 		saveBlobSound(SOUNDS[soundToChangeIdx], blob);
-		setBlobAsSound(SOUNDS[soundToChangeIdx], blob);
 	};
 	document.body.appendChild(inputSoundFile);
 
@@ -918,9 +921,7 @@ function colorsStringToHexArray(colorsString) {
 			</div>
 	`;
 	document.querySelector("#keybindsPanel>div.grid>div:nth-child(2)").appendChild(gpp_keybind_div);
-
 	//#endregion UI
 
-	loadBlobSounds();
 	log(LOG_LEVELS.info, "GeoPixels++ loaded");
 })();
