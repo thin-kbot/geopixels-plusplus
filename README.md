@@ -17,6 +17,8 @@ A bunch of QOL features for [GeoPixels](https://geopixels.net/) :
     - "add a new censor manually" : input manually the parameters of your censor
     - "Toggle censor mode" : enter "censor mode" => draw censor rectangles directly on the canvas
     - "clear censors" : delete all you censor rectangles
+    - "import censors (replace)" : replace your current censor configuration with the one you input
+    - "import censors (add)" : add all censors inputed to your config
 
 ## installation
 1. install [Violentmonkey](https://violentmonkey.github.io/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/jinjaccalgkegednnccohejagnlnfdag)) or [Tampermonkey](https://www.tampermonkey.net/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/dhdgffkkebhmkfjojejmpbldmpobfkfo))

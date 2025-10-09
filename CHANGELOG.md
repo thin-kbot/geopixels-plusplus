@@ -12,13 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - make buttons less messy in the existing UI
 - toggle ghost visibility
 - make syncable censors
-  - export/import censors
 - make it possible to still pan and zoom the canvas with MMB and scroll wheel while drawing censor rects
 - keybind to replace ghost directly
 - ability to totally unbind keybinds
 - add *time until full* next to the paint modal
 
 ## [done]
+### Added
+- Ability to import and export censors
 ### Changed
 - always keep the transparent 'color' selected when setting the user palette
 ### Fixed

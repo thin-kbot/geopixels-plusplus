@@ -274,6 +274,18 @@ function colorsStringToHexArray(colorsString) {
 	let censorStartPoint = null;
 	let tempCensorRect = null;
 
+	function isValidCensorConfig(json) {
+		return (
+			Array.isArray(json) &&
+			json.every(
+				(obj) =>
+					typeof obj === "object" &&
+					obj !== null &&
+					["gridX", "gridY", "width", "height"].every((key) => Number.isInteger(obj[key]))
+			)
+		);
+	}
+
 	//#region Drawing censor
 	function canvasPointToGrid(canvas, e) {
 		const rect = canvas.getBoundingClientRect();
@@ -771,6 +783,52 @@ function colorsStringToHexArray(colorsString) {
 			{
 				innerText: "clear censors",
 				onClick: () => saveCensorRects(),
+			},
+			{
+				innerText: "export censors",
+				onClick: () => copyToClipboard(JSON.stringify(censorRects)),
+			},
+			{
+				innerText: "import censors (replace)",
+				onClick: () => {
+					const input = prompt("Paste censor config: ");
+					if (!input) return;
+
+					if (!isJsonString(input)) {
+						alert("Invalid config.");
+						return;
+					}
+					const config = JSON.parse(input);
+
+					if (!isValidCensorConfig(config)) {
+						alert("Invalid config.");
+						return;
+					}
+
+					log(LOG_LEVELS.info, "replaced Censor rects with", config);
+					saveCensorRects(config);
+				},
+			},
+			{
+				innerText: "import censors (add)",
+				onClick: () => {
+					const input = prompt("Paste censor config: ");
+					if (!input) return;
+
+					if (!isJsonString(input)) {
+						alert("Invalid config.");
+						return;
+					}
+					const config = JSON.parse(input);
+
+					if (!isValidCensorConfig(config)) {
+						alert("Invalid config.");
+						return;
+					}
+
+					log(LOG_LEVELS.info, "added Censor rects:", config);
+					for (const rect of config) addCensorRect(rect);
+				},
 			},
 		])
 	);
