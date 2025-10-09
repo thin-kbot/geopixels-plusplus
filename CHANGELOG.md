@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - always keep the transparent 'color' selected when setting the user palette
 ### Fixed
 - fix `Cannot read properties of undefined (reading 'toLowerCase')` when setting user colors with no color selected to paint
+- fix not seeing the drawing of the first rect when in "censor mode"
 
 ## [0.4.0] - 2025-10-08
 ### Added

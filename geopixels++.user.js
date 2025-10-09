@@ -472,15 +472,15 @@ function colorsStringToHexArray(colorsString) {
 
 		const gSize = usw.gridSize || gridSize || 25;
 
+		if (censorMode && isDraggingCensor && tempCensorRect) {
+			drawCensorRect(ctx, tempCensorRect, gSize, "#0007");
+		}
+
 		const rects = getCensorRects();
 		if (!rects.length) return;
 		rects.forEach((rect) => {
 			drawCensorRect(ctx, rect, gSize, "#000");
 		});
-
-		if (censorMode && isDraggingCensor && tempCensorRect) {
-			drawCensorRect(ctx, tempCensorRect, gSize, "#0007");
-		}
 	}
 
 	function waitForMap(callback) {
