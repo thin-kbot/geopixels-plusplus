@@ -10,16 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - persistent map theme
 - UI theme (dark mode)
 - make buttons less messy in the existing UI
-- toggle ghost visibility
 - make syncable censors
 - make it possible to still pan and zoom the canvas with MMB and scroll wheel while drawing censor rects
-- keybind to replace ghost directly
-- ability to totally unbind keybinds
 - add *time until full* next to the paint modal
 
-## [done]
+## [0.5.0] - 2025-10-09
 ### Added
 - Ability to import and export censors
+- Very modular keybind setup + added two new keybinds : 
+  - "Toggle ghost image"
+  - "Set ghost image's top left"
 ### Changed
 - always keep the transparent 'color' selected when setting the user palette
 ### Fixed

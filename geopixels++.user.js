@@ -2,7 +2,7 @@
 // @name         GeoPixels++
 // @description  QOL features for https://geopixels.net/ with color palette management
 // @author       thin-kbot, Observable, h65e3j
-// @version      0.4.0
+// @version      0.5.0
 // @match        https://*.geopixels.net/*
 // @namespace    https://github.com/thin-kbot
 // @homepage     https://github.com/thin-kbot/geopixels-plusplus
@@ -32,6 +32,7 @@ function log(lvl, ...args) {
 
 const STORAGE_KEYS = {
 	censor: "geo++_censorRects",
+	keybinds: "geo++_keybinds",
 };
 
 function isJsonString(str) {
@@ -41,6 +42,19 @@ function isJsonString(str) {
 		return false;
 	}
 	return true;
+}
+
+function screenPointToGrid(canvas, mX, mY) {
+	const rect = canvas.getBoundingClientRect();
+
+	// Convert screen coordinates to map coordinates
+	const lngLat = map.unproject([mX - rect.left, mY - rect.top]);
+	const merc = turf.toMercator([lngLat.lng, lngLat.lat]);
+
+	return {
+		gridX: Math.round(merc[0] / gridSize),
+		gridY: Math.round(merc[1] / gridSize),
+	};
 }
 //#endregion
 
@@ -287,21 +301,6 @@ function colorsStringToHexArray(colorsString) {
 	}
 
 	//#region Drawing censor
-	function canvasPointToGrid(canvas, e) {
-		const rect = canvas.getBoundingClientRect();
-		const x = e.clientX - rect.left;
-		const y = e.clientY - rect.top;
-
-		// Convert screen coordinates to map coordinates
-		const lngLat = map.unproject([x, y]);
-		const merc = turf.toMercator([lngLat.lng, lngLat.lat]);
-
-		return {
-			gridX: Math.round(merc[0] / gridSize),
-			gridY: Math.round(merc[1] / gridSize),
-		};
-	}
-
 	function enableCensorMode() {
 		censorMode = true;
 		const censorCanvas = document.getElementById("censor-canvas");
@@ -342,7 +341,7 @@ function colorsStringToHexArray(colorsString) {
 			e.stopPropagation();
 
 			isDraggingCensor = true;
-			const point = canvasPointToGrid(canvas, e);
+			const point = screenPointToGrid(canvas, e.clientX, e.clientY);
 			censorStartPoint = point;
 			tempCensorRect = {
 				gridX: point.gridX,
@@ -358,7 +357,7 @@ function colorsStringToHexArray(colorsString) {
 			e.preventDefault();
 			e.stopPropagation();
 
-			const point = canvasPointToGrid(canvas, e);
+			const point = screenPointToGrid(canvas, e.clientX, e.clientY);
 
 			const minX = Math.min(censorStartPoint.gridX, point.gridX);
 			const maxX = Math.max(censorStartPoint.gridX, point.gridX);
@@ -497,6 +496,74 @@ function colorsStringToHexArray(colorsString) {
 		new ResizeObserver(drawCensorRects).observe(map.getContainer());
 	});
 	//#endregion
+
+	//#region keybind
+	const KEY_BINDINGS = {
+		toggleGhost: {
+			text: "Toggle ghost image",
+			keydown: () => document.getElementById("ghost-canvas").toggleAttribute("hidden"),
+		},
+		placeGhost: {
+			text: "Set ghost image's top left",
+			keydown: () => {
+				const pos = screenPointToGrid(document.getElementById("pixel-canvas"), mouseX, mouseY);
+				ghostImageTopLeft = pos;
+				localStorage.setItem("ghostImageCoords", JSON.stringify(pos));
+				log(LOG_LEVELS.info, "Ghost image position set.");
+				drawGhostImageOnCanvas();
+			},
+		},
+	};
+
+	let mouseX, mouseY;
+	document.addEventListener("mousemove", (e) => {
+		mouseX = e.clientX;
+		mouseY = e.clientY;
+	});
+
+	let keybinds = JSON.parse(localStorage.getItem(STORAGE_KEYS.keybinds)) || {};
+
+	function saveKeybinds(kb) {
+		keybinds = kb;
+		localStorage.setItem(STORAGE_KEYS.keybinds, JSON.stringify(kb));
+	}
+
+	if (!localStorage.getItem(STORAGE_KEYS.keybinds))
+		saveKeybinds({ t: "toggleGhost", e: "placeGhost" });
+
+	document.getElementById("toggleKeybinds").addEventListener("click", () => {
+		for (const key in keybinds) {
+			const element = document.getElementById(`gpp_keybind-${keybinds[key]}`);
+			if (element) element.value = key;
+		}
+	});
+
+	function handleKeyBindPress(e) {
+		// Ignore shortcuts if typing in an input field.
+		const aElm = document.activeElement;
+		if (aElm && (aElm.tagName === "INPUT" || aElm.tagName === "TEXTAREA" || aElm.isContentEditable))
+			return;
+
+		const id = keybinds[e.key.toLowerCase()];
+		if (id && KEY_BINDINGS[id][e.type]) {
+			KEY_BINDINGS[id][e.type](e);
+			e.preventDefault();
+		}
+	}
+
+	document.addEventListener("keydown", handleKeyBindPress);
+	document.addEventListener("keyup", handleKeyBindPress);
+
+	document
+		.querySelector("#keybindsPanel>div.flex>button.bg-blue-500")
+		.addEventListener("click", () => {
+			const newKeybinds = {};
+			Array.from(document.querySelectorAll("[id^='gpp_keybind-']")).forEach((elm) => {
+				newKeybinds[elm.value.trim().toLowerCase()] = elm.id;
+			});
+			saveKeybinds(newKeybinds);
+		});
+	//#enregion
 
 	//#region UI Helpers
 	function copyToClipboard(text) {
@@ -832,6 +899,26 @@ function colorsStringToHexArray(colorsString) {
 			},
 		])
 	);
+
+	//Add to the keybind Panel
+	const gpp_keybind_div = document.createElement("div");
+	gpp_keybind_div.innerHTML = `
+			<h3 class="text-lg font-semibold text-gray-700 mb-2">GeoPixels++</h3>
+			<div class="space-y-2">
+				${Object.keys(KEY_BINDINGS)
+					.map(
+						(id) => `
+						<div class="flex items-center justify-between p-2">
+							<label for="gpp_keybind-${id}" class="text-gray-600">${KEY_BINDINGS[id].text}</label>
+							<input id="gpp_keybind-${id}" type="text" maxlength="1" class="keybind-input">
+						</div>
+					`
+					)
+					.join("")}
+			</div>
+	`;
+	document.querySelector("#keybindsPanel>div.grid>div:nth-child(2)").appendChild(gpp_keybind_div);
+
 	//#endregion UI
 
 	loadBlobSounds();

@@ -19,6 +19,9 @@ A bunch of QOL features for [GeoPixels](https://geopixels.net/) :
     - "clear censors" : delete all you censor rectangles
     - "import censors (replace)" : replace your current censor configuration with the one you input
     - "import censors (add)" : add all censors inputed to your config
+- Add new keybinds in the website's keybind menu : 
+  - "Toggle ghost image" : self explaining
+  - "Set ghost image's top left" : self explaining
 
 ## installation
 1. install [Violentmonkey](https://violentmonkey.github.io/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/jinjaccalgkegednnccohejagnlnfdag)) or [Tampermonkey](https://www.tampermonkey.net/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/dhdgffkkebhmkfjojejmpbldmpobfkfo))
