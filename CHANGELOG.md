@@ -14,6 +14,10 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - make it possible to still pan and zoom the canvas with MMB and scroll wheel while drawing censor rects
 - add *time until full* next to the paint modal
 
+## [0.5.1] - 2025-10-10
+### Fixed
+- fix saving the keybinds
+
 ## [0.5.0] - 2025-10-09
 ### Added
 - Ability to import and export censors

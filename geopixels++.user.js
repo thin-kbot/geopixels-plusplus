@@ -2,7 +2,7 @@
 // @name         GeoPixels++
 // @description  QOL features for https://geopixels.net/ with color palette management
 // @author       thin-kbot, Observable, h65e3j
-// @version      0.5.0
+// @version      0.5.1
 // @match        https://*.geopixels.net/*
 // @namespace    https://github.com/thin-kbot
 // @homepage     https://github.com/thin-kbot/geopixels-plusplus
@@ -60,7 +60,7 @@ const KEY_BINDINGS = {
 		},
 	},
 };
-DEFAULT_KEY_BINDINGS = { t: "toggleGhost", e: "placeGhost" };
+const DEFAULT_KEY_BINDINGS = { t: "toggleGhost", e: "placeGhost" };
 let mouseX, mouseY;
 //#endregion Global variables
 
@@ -563,7 +563,7 @@ function colorsStringToHexArray(colorsString) {
 		.addEventListener("click", () => {
 			const newKeybinds = {};
 			Array.from(document.querySelectorAll("[id^='gpp_keybind-']")).forEach((elm) => {
-				newKeybinds[elm.value.trim().toLowerCase()] = elm.id;
+				newKeybinds[elm.value.trim().toLowerCase()] = elm.id.replace("gpp_keybind-", "");
 			});
 			saveKeybinds(newKeybinds);
 		});
