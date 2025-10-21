@@ -163,7 +163,7 @@ function colorsStringToHexArray(colorsString) {
 
 	//#region Ghost Image Palette Functions
 	function getGhostImageHexColors() {
-		return ghostImageColors.map((rgba) => {
+		return ghostPaletteColors.map((rgba) => {
 			const c = rgba.substring(5, rgba.length - 1).split(",");
 			return rgbaToHex(c[0], c[1], c[2]);
 		});
@@ -175,26 +175,26 @@ function colorsStringToHexArray(colorsString) {
 	}
 
 	function getEnabledGhostPalette() {
-		if (ghostImageActiveColors && ghostImageActiveColors.size > 0)
-			return Array.from(ghostImageActiveColors).map((rgba) => rgbaToHex(...rgba.match(/\d+/g)));
+		if (ghostActivePaletteColors && ghostActivePaletteColors.size > 0)
+			return Array.from(ghostActivePaletteColors).map((rgba) => rgbaToHex(...rgba.match(/\d+/g)));
 
 		log(LOG_LEVELS.info, "No ghost colors enabled");
 		return "";
 	}
 
 	function isInGhostPalette(hex) {
-		const is = ghostImageColors.includes(rgbToRgbaString(hexToRgba(hex)));
+		const is = ghostPaletteColors.includes(rgbToRgbaString(hexToRgba(hex)));
 		if (!is) log(LOG_LEVELS.warn, "Color not in ghost palette:", hex);
 		return is;
 	}
 
 	function setEnabledGhostPalette(hexArray) {
-		if (!ghostImageColors || ghostImageColors.length === 0) {
+		if (!ghostPaletteColors || ghostPaletteColors.length === 0) {
 			log(LOG_LEVELS.warn, "No ghost image loaded");
 			return;
 		}
 
-		ghostImageActiveColors = new Set(hexArray.map((h) => rgbToRgbaString(hexToRgba(h))));
+		ghostActivePaletteColors = new Set(hexArray.map((h) => rgbToRgbaString(hexToRgba(h))));
 		populateColorPaletteUI();
 		regenerateGhostCanvas();
 		drawGhostImageOnCanvas();
@@ -247,7 +247,7 @@ function colorsStringToHexArray(colorsString) {
 			try {
 				const url = new URL(input.includes("http") ? input : "https://www.geopixels.net/" + input);
 				coordString = url.searchParams.get("coords") || url.searchParams.get("key");
-				if (coordString) {
+				if (!coordString) {
 					log(LOG_LEVELS.error, "No coords parameter found in URL");
 					return;
 				}
