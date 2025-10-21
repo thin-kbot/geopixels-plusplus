@@ -7,14 +7,12 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 
 ## [Unreleased] (todo)
 - being able to switch from multiple ghost images
-- persistent map theme
 - UI theme (dark mode)
 - make buttons less messy in the existing UI
 - make syncable censors
 - make it possible to still pan and zoom the canvas with MMB and scroll wheel while drawing censor rects
-- add *time until full* next to the paint modal
 
-## [Unreleased] (done)
+## [0.5.2] - 2025-10-21
 ### Fixed
 - fix ghost's palette functions since main script's variables rename
 - fix custom sounds sometimes not loading properly
