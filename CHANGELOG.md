@@ -17,6 +17,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 ## [Unreleased] (done)
 ### Fixed
 - fix ghost's palette functions since main script's variables rename
+- fix custom sounds sometimes not loading properly
 
 ## [0.5.1] - 2025-10-10
 ### Fixed

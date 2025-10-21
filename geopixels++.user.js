@@ -308,6 +308,17 @@ function colorsStringToHexArray(colorsString) {
 		}
 	}
 	loadBlobSounds();
+
+	function waitForSounds(callback) {
+		let tries = 0;
+		function check() {
+			if (SOUNDS.every((s) => eval(`${s.variable} !== null`))) callback();
+			else if (tries++ < 100) setTimeout(check, 100);
+		}
+		check();
+	}
+
+	waitForSounds(loadBlobSounds);
 	//#endregion Sound
 
 	//#region Censor
