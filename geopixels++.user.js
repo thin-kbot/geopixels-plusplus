@@ -201,15 +201,6 @@ function colorsStringToHexArray(colorsString) {
 
 		log(LOG_LEVELS.info, "Ghost palette updated with", hexArray.length, "enabled colors");
 	}
-
-	function onlyShowOwnedGhostColors() {
-		setEnabledGhostPalette(getAvailableGhostColors());
-	}
-
-	function setBothPalette(s) {
-		setEnabledUserPalette(s.filter(isInUserPalette));
-		setEnabledGhostPalette(s.filter(isInGhostPalette));
-	}
 	//#endregion Ghost Image Palette Functions
 
 	//#region Navigation
@@ -758,7 +749,9 @@ function colorsStringToHexArray(colorsString) {
 	//#region UI
 	// Add buttons to ghost palette container
 	document.querySelector("#ghostColorPaletteContainer>div").append(
-		makeBasicButton("Enable Only Owned Ghost Colors", onlyShowOwnedGhostColors),
+		makeBasicButton("Enable Only Owned Ghost Colors", () =>
+			setEnabledGhostPalette(getAvailableGhostColors())
+		),
 		makeBasicButton("Get Ghost Colors", () =>
 			copyToClipboard(
 				getGhostImageHexColors()
@@ -826,7 +819,12 @@ function colorsStringToHexArray(colorsString) {
 			const input = prompt("Enter coordinates (gridX,gridY) or GeoPixels URL:");
 			if (input) gotoFromInput(input);
 		}),
-		makeMenuButton("🧪", "Set Both Palettes", () => promptForColors(setBothPalette)),
+		makeMenuButton("🧪", "Set Both Palettes", () =>
+			promptForColors((s) => {
+				setEnabledUserPalette(s.filter(isInUserPalette));
+				setEnabledGhostPalette(s.filter(isInGhostPalette));
+			})
+		),
 		makeSelectMenuButton(
 			"🎵",
 			"Change Sound",

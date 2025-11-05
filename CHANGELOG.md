@@ -12,6 +12,10 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - make syncable censors
 - make it possible to still pan and zoom the canvas with MMB and scroll wheel while drawing censor rects
 
+## [Unreleased] (done)
+### Changed
+- moved single use functions inside the button call that uses them
+
 ## [0.5.2] - 2025-10-21
 ### Fixed
 - fix ghost's palette functions since main script's variables rename
