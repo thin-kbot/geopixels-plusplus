@@ -13,132 +13,132 @@
 // @grant        unsafeWindow
 // ==/UserScript==
 
-//#region Global variables
-const LOG_LEVELS = {
-	error: { label: "ERR", color: "red" },
-	info: { label: "INF", color: "lime" },
-	warn: { label: "WRN", color: "yellow" },
-	debug: { label: "DBG", color: "cyan" },
-};
-
-const STORAGE_KEYS = {
-	censor: "geo++_censorRects",
-	keybinds: "geo++_keybinds",
-};
-
-const SOUNDS = [
-	{
-		name: "Pixel placement",
-		variable: "soundBufferPop",
-	},
-	{
-		name: '"Paint"',
-		variable: "soundBufferThump",
-	},
-	{
-		name: "Max charges reached",
-		variable: "soundBufferMaxCharges",
-	},
-];
-let soundToChangeIdx = 0;
-
-let censorRects;
-let censorMode = false;
-let isDraggingCensor = false;
-let censorStartPoint = null;
-let tempCensorRect = null;
-
-const KEY_BINDINGS = {
-	toggleGhost: {
-		text: "Toggle ghost image",
-		keydown: () => document.getElementById("ghost-canvas").toggleAttribute("hidden"),
-	},
-	placeGhost: {
-		text: "Set ghost image's top left",
-		keydown: () => {
-			const pos = screenPointToGrid(document.getElementById("pixel-canvas"), mouseX, mouseY);
-			ghostImageTopLeft = pos;
-			localStorage.setItem("ghostImageCoords", JSON.stringify(pos));
-			log(LOG_LEVELS.info, "Ghost image position set.");
-			drawGhostImageOnCanvas();
-		},
-	},
-};
-const DEFAULT_KEY_BINDINGS = { t: "toggleGhost", e: "placeGhost" };
-let mouseX, mouseY;
-//#endregion Global variables
-
-//#region Utils
-function log(lvl, ...args) {
-	console.log(
-		`%c[GeoPixels++] %c[${lvl.label}]`,
-		"color: mediumvioletred;",
-		`color:${lvl.color};`,
-		...args
-	);
-}
-
-function isJsonString(str) {
-	try {
-		JSON.parse(str);
-	} catch {
-		return false;
-	}
-	return true;
-}
-
-function screenPointToGrid(canvas, mX, mY) {
-	const rect = canvas.getBoundingClientRect();
-
-	// Convert screen coordinates to map coordinates
-	const lngLat = map.unproject([mX - rect.left, mY - rect.top]);
-	const merc = turf.toMercator([lngLat.lng, lngLat.lat]);
-
-	return {
-		gridX: Math.round(merc[0] / gridSize),
-		gridY: Math.round(merc[1] / gridSize),
-	};
-}
-//#endregion Utils
-
-//#region Color Utils
-const cToHex = (c) => (+c).toString(16).padStart(2, "0");
-const hexToC = (h) => parseInt(h, 16);
-function toFullHex(hex) {
-	hex = hex.toLowerCase();
-	if (hex.length === 4 || hex.length === 5)
-		hex = "#" + [...hex.slice(1)].map((c) => c + c).join("");
-	if (hex.length === 7) hex += "ff";
-	return hex;
-}
-const toOutputHex = (hex) => toFullHex(hex).slice(0, 7);
-const rgbaToHex = (r, g, b, a = 255) => "#" + cToHex(r) + cToHex(g) + cToHex(b) + cToHex(a);
-const rgbToRgbaString = ({ r, g, b }) => `rgba(${r},${g},${b},1)`;
-function hexToRgba(hex) {
-	const h = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})?$/i.exec(hex);
-	return { r: hexToC(h[1]), g: hexToC(h[2]), b: hexToC(h[3]), a: h[4] ? hexToC(h[4]) : 255 };
-}
-function parseColor(colorStr) {
-	const h = /^#?([a-f\d]{6}(?:[a-f\d]{2})?|[a-f\d]{3,4})/i.exec(colorStr);
-	if (h) return toFullHex(`#${h[1]}`);
-	log(LOG_LEVELS.error, "Invalid color format:", colorStr);
-	return null;
-}
-Array.prototype.toOutputString = function () {
-	return this.map((c) => toOutputHex(c)).join("\n");
-};
-function colorsStringToHexArray(colorsString) {
-	return colorsString
-		.trim()
-		.split("\n")
-		.filter(Boolean)
-		.map((c) => parseColor(c))
-		.filter(Boolean);
-}
-//#endregion Color Utils
-
 (function () {
+	//#region Global variables
 	const usw = unsafeWindow;
+
+	const LOG_LEVELS = {
+		error: { label: "ERR", color: "red" },
+		info: { label: "INF", color: "lime" },
+		warn: { label: "WRN", color: "yellow" },
+		debug: { label: "DBG", color: "cyan" },
+	};
+
+	const STORAGE_KEYS = {
+		censor: "geo++_censorRects",
+		keybinds: "geo++_keybinds",
+	};
+
+	const SOUNDS = [
+		{
+			name: "Pixel placement",
+			variable: "soundBufferPop",
+		},
+		{
+			name: '"Paint"',
+			variable: "soundBufferThump",
+		},
+		{
+			name: "Max charges reached",
+			variable: "soundBufferMaxCharges",
+		},
+	];
+	let soundToChangeIdx = 0;
+
+	let censorRects;
+	let censorMode = false;
+	let isDraggingCensor = false;
+	let censorStartPoint = null;
+	let tempCensorRect = null;
+
+	const KEY_BINDINGS = {
+		toggleGhost: {
+			text: "Toggle ghost image",
+			keydown: () => document.getElementById("ghost-canvas").toggleAttribute("hidden"),
+		},
+		placeGhost: {
+			text: "Set ghost image's top left",
+			keydown: () => {
+				const pos = screenPointToGrid(document.getElementById("pixel-canvas"), mouseX, mouseY);
+				ghostImageTopLeft = pos;
+				localStorage.setItem("ghostImageCoords", JSON.stringify(pos));
+				log(LOG_LEVELS.info, "Ghost image position set.");
+				drawGhostImageOnCanvas();
+			},
+		},
+	};
+	const DEFAULT_KEY_BINDINGS = { t: "toggleGhost", e: "placeGhost" };
+	let mouseX, mouseY;
+	//#endregion Global variables
+
+	//#region Utils
+	function log(lvl, ...args) {
+		console.log(
+			`%c[GeoPixels++] %c[${lvl.label}]`,
+			"color: mediumvioletred;",
+			`color:${lvl.color};`,
+			...args
+		);
+	}
+
+	function isJsonString(str) {
+		try {
+			JSON.parse(str);
+		} catch {
+			return false;
+		}
+		return true;
+	}
+
+	function screenPointToGrid(canvas, mX, mY) {
+		const rect = canvas.getBoundingClientRect();
+
+		// Convert screen coordinates to map coordinates
+		const lngLat = map.unproject([mX - rect.left, mY - rect.top]);
+		const merc = turf.toMercator([lngLat.lng, lngLat.lat]);
+
+		return {
+			gridX: Math.round(merc[0] / gridSize),
+			gridY: Math.round(merc[1] / gridSize),
+		};
+	}
+	//#endregion Utils
+
+	//#region Color Utils
+	const cToHex = (c) => (+c).toString(16).padStart(2, "0");
+	const hexToC = (h) => parseInt(h, 16);
+	function toFullHex(hex) {
+		hex = hex.toLowerCase();
+		if (hex.length === 4 || hex.length === 5)
+			hex = "#" + [...hex.slice(1)].map((c) => c + c).join("");
+		if (hex.length === 7) hex += "ff";
+		return hex;
+	}
+	const toOutputHex = (hex) => toFullHex(hex).slice(0, 7);
+	const rgbaToHex = (r, g, b, a = 255) => "#" + cToHex(r) + cToHex(g) + cToHex(b) + cToHex(a);
+	const rgbToRgbaString = ({ r, g, b }) => `rgba(${r},${g},${b},1)`;
+	function hexToRgba(hex) {
+		const h = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})?$/i.exec(hex);
+		return { r: hexToC(h[1]), g: hexToC(h[2]), b: hexToC(h[3]), a: h[4] ? hexToC(h[4]) : 255 };
+	}
+	function parseColor(colorStr) {
+		const h = /^#?([a-f\d]{6}(?:[a-f\d]{2})?|[a-f\d]{3,4})/i.exec(colorStr);
+		if (h) return toFullHex(`#${h[1]}`);
+		log(LOG_LEVELS.error, "Invalid color format:", colorStr);
+		return null;
+	}
+	Array.prototype.toOutputString = function () {
+		return this.map((c) => toOutputHex(c)).join("\n");
+	};
+	function colorsStringToHexArray(colorsString) {
+		return colorsString
+			.trim()
+			.split("\n")
+			.filter(Boolean)
+			.map((c) => parseColor(c))
+			.filter(Boolean);
+	}
+	//#endregion Color Utils
 
 	//#region User Palette Functions
 	const getUserPalette = () => Colors.slice(0, -1).map(toFullHex);

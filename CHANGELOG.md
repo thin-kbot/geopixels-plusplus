@@ -15,6 +15,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 ## [Unreleased] (done)
 ### Changed
 - moved single use functions inside the button call that uses them
+- moved 'Global variables', 'Utils' and 'Color Utils' inside `(function () { ... })()`
 ### Added
 - 'Max charges reached' sound change option
 
