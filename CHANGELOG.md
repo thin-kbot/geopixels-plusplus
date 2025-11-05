@@ -18,6 +18,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - moved 'Global variables', 'Utils' and 'Color Utils' inside `(function () { ... })()`
 ### Added
 - 'Max charges reached' sound change option
+- 'Toggle Censor Mode' keybind
 
 ## [0.5.2] - 2025-10-21
 ### Fixed

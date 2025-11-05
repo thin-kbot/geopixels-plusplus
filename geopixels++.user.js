@@ -66,8 +66,12 @@
 				drawGhostImageOnCanvas();
 			},
 		},
+		toggleCensorMode: {
+			text: "Toggle Censor Mode",
+			keydown: () => toggleCensorMode(),
+		},
 	};
-	const DEFAULT_KEY_BINDINGS = { t: "toggleGhost", e: "placeGhost" };
+	const DEFAULT_KEY_BINDINGS = { y: "toggleGhost", e: "placeGhost", m: "toggleCensorMode" };
 	let mouseX, mouseY;
 	//#endregion Global variables
 
