@@ -15,6 +15,8 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 ## [Unreleased] (done)
 ### Changed
 - moved single use functions inside the button call that uses them
+### Added
+- 'Max charges reached' sound change option
 
 ## [0.5.2] - 2025-10-21
 ### Fixed

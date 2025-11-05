@@ -28,12 +28,16 @@ const STORAGE_KEYS = {
 
 const SOUNDS = [
 	{
-		name: "Pixel placement sound",
+		name: "Pixel placement",
 		variable: "soundBufferPop",
 	},
 	{
-		name: '"Paint" sound',
+		name: '"Paint"',
 		variable: "soundBufferThump",
+	},
+	{
+		name: "Max charges reached",
+		variable: "soundBufferMaxCharges",
 	},
 ];
 let soundToChangeIdx = 0;
