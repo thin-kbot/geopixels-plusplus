@@ -12,7 +12,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - make syncable censors
 - make it possible to still pan and zoom the canvas with MMB and scroll wheel while drawing censor rects
 
-## [Unreleased] (done)
+## [0.5.3] - 2025-11-05
 ### Changed
 - moved single use functions inside the button call that uses them
 - moved 'Global variables', 'Utils' and 'Color Utils' inside `(function () { ... })()`
