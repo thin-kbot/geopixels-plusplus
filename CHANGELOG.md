@@ -8,13 +8,13 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 ## [Unreleased] (todo)
 - being able to switch from multiple ghost images
 - UI theme (dark mode)
-- make buttons less messy in the existing UI
 - make syncable censors
 - make it possible to still pan and zoom the canvas with MMB and scroll wheel while drawing censor rects
 
 ## [Unreleased] (done)
 ### Changed
 - Small visual improvement to the `SelectMenuButton` component
+- Decluttered the ghost's and profile's UI by making the buttons collapsible
 
 ## [0.5.3] - 2025-11-05
 ### Changed

@@ -194,10 +194,8 @@
 	}
 
 	function setEnabledGhostPalette(hexArray) {
-		if (!getGhostImageHexColors() || getGhostImageHexColors().length === 0) {
-			log(LOG_LEVELS.warn, "No ghost image loaded");
-			return;
-		}
+		if (!getGhostImageHexColors() || getGhostImageHexColors().length === 0)
+			return log(LOG_LEVELS.warn, "No ghost image loaded");
 
 		ghostActivePaletteColors = new Set(hexArray.map((h) => rgbToRgbaString(hexToRgba(h))));
 		populateColorPaletteUI();
@@ -709,6 +707,7 @@
 		select.style.height = "auto";
 		select.style.whiteSpace = "nowrap";
 		select.close = () => {
+			select.dataset.isOpened = "false";
 			select.style.maxWidth = "40px";
 			select.style.maxHeight = "40px";
 			select.style.zIndex = "-1";
@@ -717,6 +716,7 @@
 			menuButton.classList.add("rounded-xl");
 		};
 		select.open = () => {
+			select.dataset.isOpened = "true";
 			select.style.maxWidth = "500px";
 			select.style.maxHeight = (optionsTitle.length ? 25 : 0) + 16 + options.length * 40 + "px";
 			select.style.zIndex = "1";
@@ -725,7 +725,7 @@
 			menuButton.classList.remove("rounded-xl");
 		};
 		select.toggle = () => {
-			if (select.style.zIndex != "-1") select.close();
+			if (select.dataset.isOpened == "true") select.close();
 			else select.open();
 		};
 		select.close();
@@ -751,11 +751,39 @@
 		parent.appendChild(div);
 		return dropdown;
 	}
+
+	function addGPPButtonToggle(parent, ...elms) {
+		const button = makeButton("✚₊", () => button.toggle());
+		button.open = () => {
+			button.dataset.expanded = "true";
+			button.style.transform = "rotateZ(-180deg)";
+			elms.forEach((b) => {
+				b.style.display = "";
+			});
+		};
+		button.close = () => {
+			button.dataset.expanded = "false";
+			button.style.transform = "rotateZ(0)";
+			elms.forEach((b) => {
+				b.style.display = "none";
+			});
+		};
+		button.toggle = () => {
+			if (button.dataset.expanded === "true") button.close();
+			else button.open();
+		};
+		button.close();
+		button.className =
+			"text-white shadow transition cursor-pointer bg-yellow-500 hover:bg-yellow-600 rounded-full h-10 w-10";
+
+		parent.append(button, ...elms);
+	}
 	//#endregion UI Helpers
 
 	//#region UI
-	// Add buttons to ghost palette container
-	document.querySelector("#ghostColorPaletteContainer>div").append(
+	// Add buttons to ghost UI
+	addGPPButtonToggle(
+		document.querySelector("#ghostColorPaletteContainer>div"),
 		makeBasicButton("Enable Only Owned Ghost Colors", () =>
 			setEnabledGhostPalette(getAvailableGhostColors())
 		),
@@ -777,16 +805,15 @@
 		)
 	);
 
-	// Add buttons to shop (profile panel)
-	const shopButtonsContainer = document.querySelector(
-		"#profilePanel > section:nth-child(5) > div:nth-child(2) > div.mt-4"
-	);
+	// Add buttons to profile
+	const shopButtonsContainer = document.querySelector("#userColorsContainer + div");
 	if (shopButtonsContainer) {
 		shopButtonsContainer.style.display = "flex";
-		shopButtonsContainer.style.wrap = "wrap";
+		shopButtonsContainer.style.flexWrap = "wrap";
 		shopButtonsContainer.style.gap = "8px";
 
-		shopButtonsContainer.append(
+		addGPPButtonToggle(
+			shopButtonsContainer,
 			makeBasicButton("Get User Colors", () => copyToClipboard(getUserPalette().toOutputString())),
 			makeBasicButton("Get Enabled Colors", () =>
 				copyToClipboard(
