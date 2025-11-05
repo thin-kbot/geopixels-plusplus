@@ -19,6 +19,8 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 ### Added
 - 'Max charges reached' sound change option
 - 'Toggle Censor Mode' keybind
+### Fixed
+- Fix changing ghost palette colors since main script's variables change
 
 ## [0.5.2] - 2025-10-21
 ### Fixed

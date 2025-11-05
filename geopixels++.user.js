@@ -62,7 +62,7 @@
 				const pos = screenPointToGrid(document.getElementById("pixel-canvas"), mouseX, mouseY);
 				ghostImageTopLeft = pos;
 				localStorage.setItem("ghostImageCoords", JSON.stringify(pos));
-				log(LOG_LEVELS.info, "Ghost image position set.");
+				log(LOG_LEVELS.debug, "Ghost image position set.");
 				drawGhostImageOnCanvas();
 			},
 		},
@@ -171,10 +171,7 @@
 
 	//#region Ghost Image Palette Functions
 	function getGhostImageHexColors() {
-		return ghostPaletteColors.map((rgba) => {
-			const c = rgba.substring(5, rgba.length - 1).split(",");
-			return rgbaToHex(c[0], c[1], c[2]);
-		});
+		return ghostPaletteColors.map(({ hex }) => toFullHex(hex));
 	}
 
 	function getAvailableGhostColors() {
@@ -191,13 +188,13 @@
 	}
 
 	function isInGhostPalette(hex) {
-		const is = ghostPaletteColors.includes(rgbToRgbaString(hexToRgba(hex)));
+		const is = getGhostImageHexColors().includes(hex);
 		if (!is) log(LOG_LEVELS.warn, "Color not in ghost palette:", hex);
 		return is;
 	}
 
 	function setEnabledGhostPalette(hexArray) {
-		if (!ghostPaletteColors || ghostPaletteColors.length === 0) {
+		if (!getGhostImageHexColors() || getGhostImageHexColors().length === 0) {
 			log(LOG_LEVELS.warn, "No ghost image loaded");
 			return;
 		}
