@@ -690,21 +690,22 @@
 	function makeMenuButton(innerText, title, onClick) {
 		const button = makeButton(innerText, onClick);
 		button.className =
-			"w-10 h-10 bg-white shadow rounded-full flex items-center justify-center hover:bg-gray-100 cursor-pointer";
+			"w-10 h-10 bg-white shadow rounded-full flex items-center justify-center hover:bg-gray-100 cursor-pointer transition-all";
 		button.title = title;
 		return button;
 	}
 	function makeSelectMenuButton(innerText, title, options, optionsTitle = "") {
 		const wrapper = document.createElement("div");
+		const select = document.createElement("div");
+		const menuButton = makeMenuButton(innerText, title, () => select.toggle());
+
 		wrapper.className = "relative";
 		wrapper.onclick = (e) => e.stopPropagation();
 
-		const select = document.createElement("div");
 		if (optionsTitle.length) select.innerHTML = `<h2>${optionsTitle}</h2>`;
 		select.append(...options.map((opt) => makeSelectButton(opt.innerText, opt.onClick)));
-
 		select.classList =
-			"bg-white shadow rounded-xl p-2 border border-gray-300 transition transition-all absolute w-auto top-0 overflow-hidden flex flex-col gap-1";
+			"bg-white shadow rounded-xl p-2 border border-gray-300 transition-all absolute w-auto top-0 overflow-hidden flex flex-col gap-1";
 		select.style.height = "auto";
 		select.style.whiteSpace = "nowrap";
 		select.close = () => {
@@ -712,12 +713,16 @@
 			select.style.maxHeight = "40px";
 			select.style.zIndex = "-1";
 			select.style.left = "0px";
+			menuButton.classList.remove("rounded-full");
+			menuButton.classList.add("rounded-xl");
 		};
 		select.open = () => {
 			select.style.maxWidth = "500px";
 			select.style.maxHeight = (optionsTitle.length ? 25 : 0) + 16 + options.length * 40 + "px";
 			select.style.zIndex = "1";
 			select.style.left = "50px";
+			menuButton.classList.add("rounded-full");
+			menuButton.classList.remove("rounded-xl");
 		};
 		select.toggle = () => {
 			if (select.style.zIndex != "-1") select.close();
@@ -726,9 +731,6 @@
 		select.close();
 		window.addEventListener("click", () => select.close());
 
-		const menuButton = makeMenuButton(innerText, title, () => {
-			select.toggle();
-		});
 		wrapper.append(menuButton, select);
 		return wrapper;
 	}
