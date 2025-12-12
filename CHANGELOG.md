@@ -15,6 +15,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 ### Changed
 - Small visual improvement to the `SelectMenuButton` component
 - Decluttered the ghost's and profile's UI by making the buttons collapsible
+- Changed the `createModal` function to be more usable for other modals
 
 ## [0.5.3] - 2025-11-05
 ### Changed

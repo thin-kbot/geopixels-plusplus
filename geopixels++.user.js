@@ -207,7 +207,7 @@
 	//#endregion Ghost Image Palette Functions
 
 	//#region Navigation
-	function gotoCoords({ x, y }) {
+	function gotoCoords({ x, y }, zoom = 16) {
 		const gSize = usw.gridSize || gridSize || 25;
 
 		if (isNaN(x) || isNaN(y)) {
@@ -225,8 +225,7 @@
 		log(LOG_LEVELS.debug, `Moved to (${x}, ${y})`);
 	}
 
-	function gotoFromInput(input = "", zoom = 16) {
-		const gSize = usw.gridSize || gridSize || 25;
+	function gotoFromInput(input = "") {
 		let coordString;
 
 		if (!input.length) {
@@ -260,10 +259,7 @@
 			return;
 		}
 
-		const gridX = +parts[0];
-		const gridY = +parts[1];
-
-		gotoCoords({ x: gridX, y: gridY });
+		gotoCoords({ x: +parts[0], y: +parts[1] });
 	}
 	//#endregion Navigation
 
@@ -588,53 +584,43 @@
 			});
 	}
 
-	function createModal(title, innerHTML, onSubmit, submitBtTxt = "Submit") {
-		const modal = document.createElement("div");
-		modal.className = "fixed inset-0 flex items-center justify-center bg-black/50 z-[100]";
-		modal.innerHTML = `
-			<div class="bg-white rounded-xl p-6 max-w-lg w-full shadow-2xl">
-				<h2 class="mb-4 text-xl font-semibold">${title}</h2>
+	function createModal(title, innerHTML, footer = "") {
+		const modalCloseTimeout = 0.15;
+		const modalContainer = document.createElement("div");
+		modalContainer.className = "fixed inset-0 z-30 bg-black/50 flex items-center justify-center";
+		modalContainer.innerHTML = `
+			<div id="modal" class="relative bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 flex flex-col gap-6">
+				<button id="modalCross" class="absolute top-4 right-4 w-10 h-10 bg-white shadow rounded-full hover:bg-gray-100 cursor-pointer">✕</button>
+				<h2 class="text-2xl font-semibold text-gray-800">${title}</h2>
 				${innerHTML}
-				<div class="mt-4 flex gap-2 justify-end">
-					<button
-						id="colorInputCancel"
-						class="px-4 py-2 bg-gray-600 text-white rounded-md cursor-pointer font-medium"
-						style="background: #6b7280;"
-					>Cancel</button>
-					<button
-						id="colorInputSubmit"
-						class="px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer font-medium"
-					>${submitBtTxt}</button>
-				</div>
+				${footer?.length ? `<div class="flex justify-end gap-3">${footer}</div>` : ""}
 			</div>
 		`;
-		document.body.appendChild(modal);
 
-		const cancelBtn = modal.querySelector("#colorInputCancel");
-		const submitBtn = modal.querySelector("#colorInputSubmit");
+		const modal = modalContainer.querySelector("#modal");
+		modal.style.transition = `transform ${modalCloseTimeout}s ease-out`;
 
-		const closeModal = () => {
-			document.body.removeChild(modal);
+		const modalCrossBtn = modal.querySelector("#modalCross");
+
+		modal.close = () => {
 			document.removeEventListener("keydown", escHandler);
+			modal.style.transform = "scale(0)";
+			setTimeout(() => {
+				document.body.removeChild(modalContainer);
+			}, modalCloseTimeout * 1000);
 		};
-		cancelBtn.onclick = closeModal;
+		modalCrossBtn.onclick = () => modal.close();
 
-		submitBtn.onclick = () => {
-			onSubmit();
-			closeModal();
-		};
-
-		// Click outside to close
-		modal.onclick = (e) => {
-			if (e.target === modal) closeModal();
+		modalContainer.onclick = (e) => {
+			if (e.target === modalContainer) modal.close();
 		};
 
-		// ESC to close
 		const escHandler = (e) => {
-			if (e.key === "Escape") closeModal();
+			if (e.key === "Escape") modal.close();
 		};
 		document.addEventListener("keydown", escHandler);
 
+		document.body.appendChild(modalContainer);
 		return modal;
 	}
 
@@ -647,16 +633,23 @@
 					class="w-full p-3 border-2 border-gray-200 rounded-lg font-mono text-sm resize-vertical box-border"
 					style="height: 200px;"
 				></textarea>`,
-			() => {
-				const value = textarea.value.trim();
-				log(LOG_LEVELS.debug, "Submitted colors:\n", value);
-				if (value) onSubmit(colorsStringToHexArray(value));
-			}
+			`<button
+					id="colorInputSubmit"
+					class="px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer font-medium"
+				>Submit</button>`
 		);
 
+		const submitBtn = modal.querySelector("#colorInputSubmit");
 		const textarea = modal.querySelector("#colorInputTextarea");
 
-		setTimeout(() => textarea.focus(), 100);
+		submitBtn.onclick = () => {
+			const value = textarea.value.trim();
+			log(LOG_LEVELS.debug, "Submitted colors:\n", value);
+			if (value) onSubmit(colorsStringToHexArray(value));
+			modal.close();
+		};
+
+		textarea.focus();
 	}
 
 	function promptForColors(action, title = "Enter colors") {
