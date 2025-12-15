@@ -54,10 +54,12 @@
 	const KEY_BINDINGS = {
 		toggleGhost: {
 			text: "Toggle ghost image",
+			defaultKey: "y",
 			keydown: () => document.getElementById("ghost-canvas").toggleAttribute("hidden"),
 		},
 		placeGhost: {
 			text: "Set ghost image's top left",
+			defaultKey: "e",
 			keydown: () => {
 				const pos = screenPointToGrid(document.getElementById("pixel-canvas"), mouseX, mouseY);
 				ghostImageTopLeft = pos;
@@ -68,10 +70,10 @@
 		},
 		toggleCensorMode: {
 			text: "Toggle Censor Mode",
+			defaultKey: "m",
 			keydown: () => toggleCensorMode(),
 		},
 	};
-	const DEFAULT_KEY_BINDINGS = { y: "toggleGhost", e: "placeGhost", m: "toggleCensorMode" };
 	let mouseX, mouseY;
 	//#endregion Global variables
 
@@ -527,19 +529,36 @@
 		mouseY = e.clientY;
 	});
 
-	let keybinds = JSON.parse(localStorage.getItem(STORAGE_KEYS.keybinds)) || {};
+	function isValidKeybindsConfig(json, doReturn = false) {
+		const isValid =
+			json &&
+			typeof json === "object" &&
+			Object.keys(json).every((key) => KEY_BINDINGS[key] && json[key].length <= 1);
+		return doReturn ? (isValid ? json : false) : isValid;
+	}
+
+	let keybinds =
+		isValidKeybindsConfig(JSON.parse(localStorage.getItem(STORAGE_KEYS.keybinds)), true) ||
+		Object.fromEntries(
+			Object.entries(KEY_BINDINGS)
+				.filter(([_, v]) => v.defaultKey)
+				.map(([id, { defaultKey }]) => [id, defaultKey])
+		);
+
+	Object.keys(KEY_BINDINGS).forEach((id) => {
+		if (KEY_BINDINGS[id].defaultKey && !keybinds.hasOwnProperty(id))
+			keybinds[id] = KEY_BINDINGS[id].defaultKey;
+	});
 
 	function saveKeybinds(kb) {
 		keybinds = kb;
 		localStorage.setItem(STORAGE_KEYS.keybinds, JSON.stringify(kb));
 	}
 
-	if (!localStorage.getItem(STORAGE_KEYS.keybinds)) saveKeybinds(DEFAULT_KEY_BINDINGS);
-
 	document.getElementById("toggleKeybinds").addEventListener("click", () => {
 		for (const key in keybinds) {
-			const element = document.getElementById(`gpp_keybind-${keybinds[key]}`);
-			if (element) element.value = key;
+			const element = document.getElementById(`gpp_keybind-${key}`);
+			if (element) element.value = keybinds[key];
 		}
 	});
 
@@ -549,7 +568,7 @@
 		if (aElm && (aElm.tagName === "INPUT" || aElm.tagName === "TEXTAREA" || aElm.isContentEditable))
 			return;
 
-		const id = keybinds[e.key.toLowerCase()];
+		const id = Object.keys(keybinds).find((key) => keybinds[key] === e.key.toLowerCase());
 		if (id && KEY_BINDINGS[id][e.type]) {
 			KEY_BINDINGS[id][e.type](e);
 			e.preventDefault();
@@ -562,11 +581,14 @@
 	document
 		.querySelector("#keybindsPanel>div.flex>button.bg-blue-500")
 		.addEventListener("click", () => {
-			const newKeybinds = {};
-			Array.from(document.querySelectorAll("[id^='gpp_keybind-']")).forEach((elm) => {
-				newKeybinds[elm.value.trim().toLowerCase()] = elm.id.replace("gpp_keybind-", "");
-			});
-			saveKeybinds(newKeybinds);
+			saveKeybinds(
+				Object.fromEntries(
+					Object.keys(KEY_BINDINGS).map((id) => [
+						id,
+						document.querySelector(`[id^='gpp_keybind-${id}']`).value.trim().toLowerCase(),
+					])
+				)
+			);
 		});
 	//#endregion keybind
 
