@@ -17,6 +17,9 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - Decluttered the ghost's and profile's UI by making the buttons collapsible
 - Changed the `createModal` function to be more usable for other modals
 - Changed keybinds saving format to be more logical
+- small refactor of the censor drawing code
+### Added
+- 'Add one Censor Rect at Mouse' keybind => simulates the mouse click action when censor mode is enabled
 
 ## [0.5.3] - 2025-11-05
 ### Changed

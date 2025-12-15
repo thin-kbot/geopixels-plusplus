@@ -50,6 +50,7 @@
 	let isDraggingCensor = false;
 	let censorStartPoint = null;
 	let tempCensorRect = null;
+	let censorCanvas;
 
 	const KEY_BINDINGS = {
 		toggleGhost: {
@@ -72,6 +73,20 @@
 			text: "Toggle Censor Mode",
 			defaultKey: "m",
 			keydown: () => toggleCensorMode(),
+		},
+		addCensorRect: {
+			text: "Add one Censor Rect at Mouse",
+			defaultKey: "l",
+			keydown: (e) => {
+				if (e.repeat) return;
+				if (!censorMode) enableCensorMode();
+				startCensorDraw();
+			},
+			keyup: (e) => {
+				if (e.repeat || !isDraggingCensor) return;
+				endCensorDraw();
+				if (censorMode) disableCensorMode();
+			},
 		},
 	};
 	let mouseX, mouseY;
@@ -326,14 +341,19 @@
 		);
 	}
 
+	censorCanvas = document.createElement("canvas");
+	censorCanvas.id = "censor-canvas";
+	censorCanvas.style.position = "absolute";
+	censorCanvas.style.top = "0";
+	censorCanvas.style.left = "0";
+	censorCanvas.style.pointerEvents = "none";
+	document.body.appendChild(censorCanvas);
+
 	//#region Drawing censor
 	function enableCensorMode() {
 		censorMode = true;
-		const censorCanvas = document.getElementById("censor-canvas");
-		if (censorCanvas) {
-			censorCanvas.style.pointerEvents = "auto";
-			censorCanvas.style.cursor = "crosshair";
-		}
+		censorCanvas.style.pointerEvents = "auto";
+		censorCanvas.style.cursor = "crosshair";
 
 		log(LOG_LEVELS.debug, "Censor mode enabled");
 	}
@@ -344,13 +364,9 @@
 		censorStartPoint = null;
 		tempCensorRect = null;
 
-		const censorCanvas = document.getElementById("censor-canvas");
-		if (censorCanvas) {
-			censorCanvas.style.pointerEvents = "none";
-			censorCanvas.style.cursor = "auto";
-		}
+		censorCanvas.style.pointerEvents = "none";
+		censorCanvas.style.cursor = "auto";
 
-		drawCensorRects();
 		log(LOG_LEVELS.debug, "Censor mode disabled");
 	}
 
@@ -359,78 +375,67 @@
 		else enableCensorMode();
 	}
 
-	function setupCensorCanvasEvents(canvas) {
-		canvas.addEventListener("mousedown", (e) => {
-			if (!censorMode || e.button !== 0) return;
+	function startCensorDraw() {
+		isDraggingCensor = true;
+		censorStartPoint = screenPointToGrid(censorCanvas, mouseX, mouseY);
+	}
 
-			e.preventDefault();
-			e.stopPropagation();
+	function endCensorDraw() {
+		if (tempCensorRect && tempCensorRect.width > 0 && tempCensorRect.height > 0)
+			addCensorRect(tempCensorRect);
 
-			isDraggingCensor = true;
-			const point = screenPointToGrid(canvas, e.clientX, e.clientY);
-			censorStartPoint = point;
-			tempCensorRect = {
-				gridX: point.gridX,
-				gridY: point.gridY,
-				width: 0,
-				height: 0,
-			};
-		});
+		isDraggingCensor = false;
+		censorStartPoint = null;
+		tempCensorRect = null;
 
-		canvas.addEventListener("mousemove", (e) => {
-			if (!censorMode || !isDraggingCensor || !censorStartPoint) return;
+		drawCensorRects();
+	}
 
-			e.preventDefault();
-			e.stopPropagation();
+	censorCanvas.addEventListener("mousedown", (e) => {
+		if (!censorMode || e.button !== 0) return;
+		e.preventDefault();
+		e.stopPropagation();
+		startCensorDraw();
+	});
 
-			const point = screenPointToGrid(canvas, e.clientX, e.clientY);
+	censorCanvas.addEventListener("mousemove", (e) => {
+		if (!censorMode || !isDraggingCensor || !censorStartPoint) return;
 
-			const minX = Math.min(censorStartPoint.gridX, point.gridX);
-			const maxX = Math.max(censorStartPoint.gridX, point.gridX);
-			const minY = Math.min(censorStartPoint.gridY, point.gridY);
-			const maxY = Math.max(censorStartPoint.gridY, point.gridY);
+		e.preventDefault();
+		e.stopPropagation();
 
-			tempCensorRect = {
-				gridX: minX,
-				gridY: minY,
-				width: maxX - minX + 1,
-				height: maxY - minY + 1,
-			};
+		const point = screenPointToGrid(censorCanvas, e.clientX, e.clientY);
 
-			drawCensorRects();
-		});
+		const minX = Math.min(censorStartPoint.gridX, point.gridX);
+		const maxX = Math.max(censorStartPoint.gridX, point.gridX);
+		const minY = Math.min(censorStartPoint.gridY, point.gridY);
+		const maxY = Math.max(censorStartPoint.gridY, point.gridY);
 
-		canvas.addEventListener("mouseup", (e) => {
-			if (!censorMode || !isDraggingCensor || e.button !== 0) return;
+		tempCensorRect = {
+			gridX: minX - 0.5,
+			gridY: minY - 0.5,
+			width: maxX - minX + 1,
+			height: maxY - minY + 1,
+		};
 
-			e.preventDefault();
-			e.stopPropagation();
+		drawCensorRects();
+	});
 
-			if (tempCensorRect && (tempCensorRect.width > 0 || tempCensorRect.height > 0)) {
-				addCensorRect(tempCensorRect);
+	censorCanvas.addEventListener("mouseup", (e) => {
+		if (!censorMode || !isDraggingCensor || e.button !== 0) return;
+		e.preventDefault();
+		e.stopPropagation();
+		endCensorDraw();
+	});
 
-				log(
-					LOG_LEVELS.debug,
-					`Created censor rect: ${tempCensorRect.gridX},${tempCensorRect.gridY} ${tempCensorRect.width}x${tempCensorRect.height}`
-				);
-			}
-
+	censorCanvas.addEventListener("mouseleave", () => {
+		if (isDraggingCensor) {
 			isDraggingCensor = false;
 			censorStartPoint = null;
 			tempCensorRect = null;
-
 			drawCensorRects();
-		});
-
-		canvas.addEventListener("mouseleave", () => {
-			if (isDraggingCensor) {
-				isDraggingCensor = false;
-				censorStartPoint = null;
-				tempCensorRect = null;
-				drawCensorRects();
-			}
-		});
-	}
+		}
+	});
 
 	function drawCensorRect(ctx, rect, gSize, color) {
 		const topLeftMerc = [rect.gridX * gSize, (rect.gridY + rect.height) * gSize];
@@ -455,21 +460,6 @@
 	}
 	//#endregion Drawing censor
 
-	function ensureCensorCanvas() {
-		let canvas = document.getElementById("censor-canvas");
-		if (!canvas) {
-			canvas = document.createElement("canvas");
-			canvas.id = "censor-canvas";
-			canvas.style.position = "absolute";
-			canvas.style.top = "0";
-			canvas.style.left = "0";
-			canvas.style.pointerEvents = "none";
-			document.body.appendChild(canvas);
-			setupCensorCanvasEvents(canvas);
-		}
-		return canvas;
-	}
-
 	function getCensorRects() {
 		if (!Array.isArray(censorRects)) {
 			const c = localStorage.getItem(STORAGE_KEYS.censor);
@@ -485,21 +475,19 @@
 	const addCensorRect = (rect) => saveCensorRects([...getCensorRects(), rect]);
 
 	function drawCensorRects() {
-		const canvas = ensureCensorCanvas();
 		const pixelCanvas = document.getElementById("pixel-canvas");
 		if (!pixelCanvas) return;
 
-		canvas.width = pixelCanvas.width;
-		canvas.height = pixelCanvas.height;
-		const ctx = canvas.getContext("2d");
+		censorCanvas.width = pixelCanvas.width;
+		censorCanvas.height = pixelCanvas.height;
+		const ctx = censorCanvas.getContext("2d");
 
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		ctx.clearRect(0, 0, censorCanvas.width, censorCanvas.height);
 
 		const gSize = usw.gridSize || gridSize || 25;
 
-		if (censorMode && isDraggingCensor && tempCensorRect) {
+		if (censorMode && isDraggingCensor && tempCensorRect)
 			drawCensorRect(ctx, tempCensorRect, gSize, "#0007");
-		}
 
 		const rects = getCensorRects();
 		if (!rects.length) return;
