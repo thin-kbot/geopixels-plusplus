@@ -444,6 +444,26 @@
 		}
 	});
 
+	censorCanvas.addEventListener("contextmenu", (e) => {
+		if (!censorMode) return;
+		e.preventDefault();
+		e.stopPropagation();
+		const point = screenPointToGrid(censorCanvas, e.clientX, e.clientY);
+		const rects = getCensorRects();
+		const rectIdx = rects.findIndex(
+			(rect) =>
+				point.gridX >= rect.gridX &&
+				point.gridX < rect.gridX + rect.width &&
+				point.gridY >= rect.gridY &&
+				point.gridY < rect.gridY + rect.height
+		);
+		if (rectIdx !== -1 && confirm(`Remove censor rect?`)) {
+			rects.splice(rectIdx, 1);
+			saveCensorRects(rects);
+		}
+		return false;
+	});
+
 	function drawCensorRect(ctx, rect, gSize, color) {
 		const topLeftMerc = [(rect.gridX - 0.5) * gSize, (rect.gridY - 0.5 + rect.height) * gSize];
 		const bottomRightMerc = [(rect.gridX - 0.5 + rect.width) * gSize, (rect.gridY - 0.5) * gSize];
@@ -602,23 +622,18 @@
 			});
 	}
 
-	function createModal(title, innerHTML, footer = "") {
+	function createModal(title, inner, footer) {
 		const modalCloseTimeout = 0.15;
+
 		const modalContainer = document.createElement("div");
-		modalContainer.className = "fixed inset-0 z-30 bg-black/50 flex items-center justify-center";
-		modalContainer.innerHTML = `
-			<div id="modal" class="relative bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 flex flex-col gap-6">
-				<button id="modalCross" class="absolute top-4 right-4 w-10 h-10 bg-white shadow rounded-full hover:bg-gray-100 cursor-pointer">✕</button>
-				<h2 class="text-2xl font-semibold text-gray-800">${title}</h2>
-				${innerHTML}
-				${footer?.length ? `<div class="flex justify-end gap-3">${footer}</div>` : ""}
-			</div>
-		`;
+		modalContainer.className = "fixed inset-0 z-50 bg-black/50 flex items-center justify-center";
 
-		const modal = modalContainer.querySelector("#modal");
+		const modal = document.createElement("div");
+		modal.className =
+			"relative bg-white rounded-2xl shadow-2xl p-6 flex flex-col gap-6 max-h-[90vh]";
 		modal.style.transition = `transform ${modalCloseTimeout}s ease-out`;
-
-		const modalCrossBtn = modal.querySelector("#modalCross");
+		modal.style.minWidth = "min(500px,90vw)";
+		modal.style.maxWidth = "90vw";
 
 		modal.close = () => {
 			document.removeEventListener("keydown", escHandler);
@@ -627,55 +642,57 @@
 				document.body.removeChild(modalContainer);
 			}, modalCloseTimeout * 1000);
 		};
+
+		const modalCrossBtn = document.createElement("button");
+		modalCrossBtn.className =
+			"absolute top-4 right-4 w-10 h-10 bg-white shadow rounded-full hover:bg-gray-100 cursor-pointer";
+		modalCrossBtn.innerText = "✕";
 		modalCrossBtn.onclick = () => modal.close();
 
-		modalContainer.onclick = (e) => {
-			if (e.target === modalContainer) modal.close();
-		};
+		const modalTitle = document.createElement("h2");
+		modalTitle.className = "text-2xl font-semibold text-gray-800";
+		modalTitle.innerText = title;
 
-		const escHandler = (e) => {
-			if (e.key === "Escape") modal.close();
-		};
+		inner = Array.isArray(inner) ? inner : [inner];
+		modal.append(modalCrossBtn, modalTitle, ...inner);
+
+		if (footer) {
+			const footerWrapper = document.createElement("div");
+			footerWrapper.className = "flex justify-end gap-3";
+			footer = Array.isArray(footer) ? footer : [footer];
+			footerWrapper.append(...footer);
+			modal.appendChild(footerWrapper);
+		}
+		modalContainer.appendChild(modal);
+
+		modalContainer.onclick = (e) => e.target === modalContainer && modal.close();
+		const escHandler = (e) => e.key === "Escape" && modal.close();
 		document.addEventListener("keydown", escHandler);
 
 		document.body.appendChild(modalContainer);
 		return modal;
 	}
 
-	function createColorInputModal(title, placeholder, onSubmit) {
+	function promptForColors(onSubmit, title = "Enter colors") {
+		const textarea = document.createElement("textarea");
+		textarea.placeholder =
+			"Enter colors (one per line)\nFormat: '#?RRGGBB(.+)?'\nExample:\nFAECCE\n#FAECCE55\n#faecce\nFAECCE55 randomTEXTatgfdljj";
+		textarea.className =
+			"w-full p-3 border-2 border-gray-200 rounded-lg font-mono text-sm resize-vertical box-border";
+		textarea.style.height = "200px";
+
 		const modal = createModal(
 			title,
-			`<textarea
-					id="colorInputTextarea"
-					placeholder="${placeholder}"
-					class="w-full p-3 border-2 border-gray-200 rounded-lg font-mono text-sm resize-vertical box-border"
-					style="height: 200px;"
-				></textarea>`,
-			`<button
-					id="colorInputSubmit"
-					class="px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer font-medium"
-				>Submit</button>`
+			textarea,
+			makeBasicButton("Submit", COLOR_CLASS.blue, () => {
+				const value = textarea.value.trim();
+				log(LOG_LEVELS.debug, "Submitted colors:\n", value);
+				if (value) onSubmit(colorsStringToHexArray(value));
+				modal.close();
+			})
 		);
-
-		const submitBtn = modal.querySelector("#colorInputSubmit");
-		const textarea = modal.querySelector("#colorInputTextarea");
-
-		submitBtn.onclick = () => {
-			const value = textarea.value.trim();
-			log(LOG_LEVELS.debug, "Submitted colors:\n", value);
-			if (value) onSubmit(colorsStringToHexArray(value));
-			modal.close();
-		};
 
 		textarea.focus();
-	}
-
-	function promptForColors(action, title = "Enter colors") {
-		createColorInputModal(
-			title,
-			"Enter colors (one per line)\nFormat: '#?RRGGBB(.+)?'\nExample:\nFF0000\n#00FF00\n0000FF00",
-			action
-		);
 	}
 
 	function makeButton(innerText, onClick) {
@@ -684,10 +701,19 @@
 		button.onclick = onClick;
 		return button;
 	}
-	function makeBasicButton(innerText, onClick) {
+	const COLOR_CLASS = {
+		red: "bg-red-500 hover:bg-red-600 text-white",
+		green: "bg-green-500 hover:bg-green-600 text-white",
+		blue: "bg-blue-500 hover:bg-blue-600 text-white",
+		gray: "bg-gray-200 hover:bg-gray-300 text-gray-700",
+	};
+	function makeBasicButton(innerText, classes = COLOR_CLASS.blue, onClick) {
+		if (typeof classes === "function") {
+			onClick = classes;
+			classes = COLOR_CLASS.blue;
+		}
 		const button = makeButton(innerText, onClick);
-		button.className =
-			"px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600 transition cursor-pointer";
+		button.className = `px-4 py-2 rounded-lg shadow transition cursor-pointer ${classes}`;
 		return button;
 	}
 	function makeSelectButton(innerText, onClick) {
@@ -740,7 +766,7 @@
 			else select.open();
 		};
 		select.close();
-		window.addEventListener("click", () => select.close());
+		window.addEventListener("click", (e) => e.target !== menuButton && select.close(), true);
 
 		wrapper.append(menuButton, select);
 		return wrapper;
@@ -792,6 +818,73 @@
 	//#endregion UI Helpers
 
 	//#region UI
+	function createCensorsConfigModal() {
+		const censorList = document.createElement("div");
+		censorList.className = "flex flex-col overflow-y-auto gap-1";
+
+		createModal("Censor Configurations", censorList, [
+			makeBasicButton("Add Censor Rect", COLOR_CLASS.green, () => {
+				addCensorRect({ gridX: 0, gridY: 0, width: 1, height: 1 });
+				refreshCensorList();
+			}),
+			makeBasicButton("Clear All", COLOR_CLASS.red, () => {
+				if (confirm("Are you sure you want to clear all censor rectangles?")) {
+					saveCensorRects();
+					refreshCensorList();
+				}
+			}),
+		]);
+
+		function refreshCensorList() {
+			const rects = getCensorRects();
+			if (rects.length === 0) {
+				censorList.innerHTML = "No censor rectangles defined.";
+				return;
+			}
+			const rectDatas = ["gridX", "gridY", "width", "height"];
+			censorList.innerHTML = "";
+			censorList.append(
+				...rects.map((r, idx) => {
+					const row = document.createElement("div");
+					row.className =
+						"flex justify-between items-center flex-wrap p-2 border border-gray-300 rounded-lg gap-3";
+					row.append(
+						...rectDatas.map((prop) => {
+							const label = document.createElement("label");
+							label.innerText = `${prop}:`;
+							const input = document.createElement("input");
+							input.type = "number";
+							input.value = r[prop];
+							input.className = "w-28 border border-gray-300 rounded-md px-1 outline-none";
+							input.onchange = (e) => {
+								const rects = getCensorRects();
+								if (rects[idx] && parseInt(e.target.value)) {
+									rects[idx][prop] = parseInt(e.target.value);
+									saveCensorRects(rects);
+								}
+							};
+							label.append(input);
+							return label;
+						}),
+						Object.assign(
+							makeButton("🗑️", () => {
+								const rects = getCensorRects();
+								if (rects[idx]) {
+									rects.splice(idx, 1);
+									saveCensorRects(rects);
+									refreshCensorList();
+								}
+							}),
+							{ className: `p-1 rounded-lg transition cursor-pointer ${COLOR_CLASS.red}` }
+						)
+					);
+					return row;
+				})
+			);
+		}
+		refreshCensorList();
+	}
+
 	// Add buttons to ghost UI
 	addGPPButtonToggle(
 		document.querySelector("#ghostColorPaletteContainer>div"),
@@ -886,73 +979,12 @@
 		),
 		makeSelectMenuButton("🚫", "Censor", [
 			{
-				innerText: "add a new censor manually",
-				onClick: () => {
-					const input = prompt("Enter coordinates and size (gridX,gridY,width,height): ");
-					if (!input) return;
-					const [gridX, gridY, width, height] = input.split(",").map(Number);
-					if (isNaN(gridX) || isNaN(gridY) || isNaN(width) || isNaN(height)) {
-						alert("Invalid format. Use: gridX,gridY,width,height");
-						return;
-					}
-					addCensorRect({ gridX, gridY, width, height });
-				},
-			},
-			{
 				innerText: "Toggle censor mode",
-				onClick: async () => {
-					toggleCensorMode();
-				},
+				onClick: toggleCensorMode,
 			},
 			{
-				innerText: "clear censors",
-				onClick: () => saveCensorRects(),
-			},
-			{
-				innerText: "export censors",
-				onClick: () => copyToClipboard(JSON.stringify(censorRects)),
-			},
-			{
-				innerText: "import censors (replace)",
-				onClick: () => {
-					const input = prompt("Paste censor config: ");
-					if (!input) return;
-
-					if (!isJsonString(input)) {
-						alert("Invalid config.");
-						return;
-					}
-					const config = JSON.parse(input);
-
-					if (!isValidCensorConfig(config)) {
-						alert("Invalid config.");
-						return;
-					}
-
-					log(LOG_LEVELS.info, "replaced Censor rects with", config);
-					saveCensorRects(config);
-				},
-			},
-			{
-				innerText: "import censors (add)",
-				onClick: () => {
-					const input = prompt("Paste censor config: ");
-					if (!input) return;
-
-					if (!isJsonString(input)) {
-						alert("Invalid config.");
-						return;
-					}
-					const config = JSON.parse(input);
-
-					if (!isValidCensorConfig(config)) {
-						alert("Invalid config.");
-						return;
-					}
-
-					log(LOG_LEVELS.info, "added Censor rects:", config);
-					for (const rect of config) addCensorRect(rect);
-				},
+				innerText: "Open censors config",
+				onClick: createCensorsConfigModal,
 			},
 		])
 	);
@@ -975,6 +1007,12 @@
 			</div>
 	`;
 	document.querySelector("#keybindsPanel>div.grid>div:nth-child(2)").appendChild(gpp_keybind_div);
+
+	//fix some styles
+	const style = document.createElement("style");
+	style.innerHTML = `input[type="number"]{appearance:auto;}`;
+	document.head.appendChild(style);
+
 	//#endregion UI
 
 	log(LOG_LEVELS.info, "GeoPixels++ loaded");

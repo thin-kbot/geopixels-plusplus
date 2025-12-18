@@ -14,15 +14,23 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 ### Changed
 - Small visual improvement to the `SelectMenuButton` component
 - Decluttered the ghost's and profile's UI by making the buttons collapsible
-- Changed the `createModal` function to be more usable for other modals
+- Changed the `createModal` function to be more usable for other modals + take actual elements and not an html string
 - Changed keybinds saving format to be more logical
 - small refactor of the censor drawing code
+- Changed `makeBasicButton` to be able to style them easier (and added `COLOR_CLASS` with some presets)
+- Removed `createColorInputModal` and put it's functionality in `promptForColors` as that was the only place it would ever be used
 ### Added
 - 'Add one Censor Rect at Mouse' keybind => simulates the mouse click action when censor mode is enabled
-- Make it possible to still pan with MMB and zoom with scroll wheel in the canvas while in censor mode
+- Improvements to Censoring :
+  - Option to delete censors with right click when in censor mode
+  - Make it possible to still pan with MMB and zoom with scroll wheel in the canvas while in censor mode
+  - Censors config modal (see each censor rects as a list and can edit each of it's properties + delete them)
 ### Fixed
 - Fix the Censors not showing on page load until an interaction with the map happens
 - Censors being offset by .5 of a pixel
+- Make the `SelectMenuButton` close when another one is opened or when the menu is closed
+### Removed
+- "add a new censor manually", "clear censors", "export censors", "import censors (replace)" and "import censors (add)" buttons from the Censors SelectMenuButton
 
 ## [0.5.3] - 2025-11-05
 ### Changed
