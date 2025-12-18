@@ -138,6 +138,37 @@
 				saveSetting("theme", e.target.value);
 			},
 		},
+		censorColor: {
+			name: "Censor rects color",
+			type: "color",
+			category: SETTINGS_CATEGORIES.censor,
+			default: "#000",
+			onchange: (e) => {
+				saveSetting("censorColor", e.target.value);
+				drawCensorRects();
+			},
+			oninput: (e) => {
+				settings.censorColor = e.target.value;
+				drawCensorRects();
+			},
+		},
+		censorAlpha: {
+			name: "Censor rects alpha",
+			type: "range",
+			category: SETTINGS_CATEGORIES.censor,
+			min: 0,
+			max: 1,
+			step: 0.01,
+			default: 1,
+			onchange: (e) => {
+				saveSetting("censorAlpha", e.target.value);
+				drawCensorRects();
+			},
+			oninput: (e) => {
+				settings.censorAlpha = e.target.value;
+				drawCensorRects();
+			},
+		},
 		censorTextarea: {
 			name: "Censor config",
 			type: "textarea",
@@ -442,10 +473,7 @@
 
 	censorCanvas = document.createElement("canvas");
 	censorCanvas.id = "censor-canvas";
-	censorCanvas.style.position = "absolute";
-	censorCanvas.style.top = "0";
-	censorCanvas.style.left = "0";
-	censorCanvas.style.pointerEvents = "none";
+	censorCanvas.className = "inset-0 absolute pointer-events-none";
 	document.body.appendChild(censorCanvas);
 
 	//#region Drawing censor
@@ -563,7 +591,7 @@
 		return false;
 	});
 
-	function drawCensorRect(ctx, rect, gSize, color) {
+	function drawCensorRect(ctx, rect, gSize, color, a = 1) {
 		const topLeftMerc = [(rect.gridX - 0.5) * gSize, (rect.gridY - 0.5 + rect.height) * gSize];
 		const bottomRightMerc = [(rect.gridX - 0.5 + rect.width) * gSize, (rect.gridY - 0.5) * gSize];
 
@@ -582,6 +610,7 @@
 			return;
 
 		ctx.fillStyle = color;
+		ctx.globalAlpha = a;
 		ctx.fillRect(topLeftScreen.x, topLeftScreen.y, screenWidth, screenHeight);
 	}
 	//#endregion Drawing censor
@@ -614,13 +643,13 @@
 		const gSize = usw.gridSize || gridSize || 25;
 
 		if (censorMode && isDraggingCensor && tempCensorRect)
-			drawCensorRect(ctx, tempCensorRect, gSize, "#0007");
+			drawCensorRect(ctx, tempCensorRect, gSize, settings.censorColor, settings.censorAlpha / 1.5);
 
 		const rects = getCensorRects();
 		if (!rects.length) return;
-		rects.forEach((rect) => {
-			drawCensorRect(ctx, rect, gSize, "#000");
-		});
+		rects.forEach((rect) =>
+			drawCensorRect(ctx, rect, gSize, settings.censorColor, settings.censorAlpha)
+		);
 	}
 
 	function waitForMap(callback) {
@@ -728,7 +757,8 @@
 		);
 
 	Object.keys(SETTINGS).forEach((id) => {
-		if (SETTINGS[id].default && !settings.hasOwnProperty(id)) settings[id] = SETTINGS[id].default;
+		if (SETTINGS[id].default !== undefined && !settings.hasOwnProperty(id))
+			settings[id] = SETTINGS[id].default;
 	});
 
 	function saveSetting(id, val) {
@@ -1057,7 +1087,7 @@
 									Object.assign(document.createElement("option"), {
 										value,
 										innerText: text,
-										selected: (setting.value ? setting.value() : settings[key]) === value,
+										selected: (setting.value?.() ?? settings[key]) === value,
 									})
 								)
 							);
@@ -1067,7 +1097,7 @@
 							const textarea = Object.assign(document.createElement("textarea"), {
 								className:
 									"w-full h-32 rounded-md border-2 border-gray-200 p-2 font-mono resize-vertical outline-none transition",
-								value: setting.value ? setting.value() : settings[key],
+								value: setting.value?.() ?? settings[key],
 								...events,
 							});
 							if (setting.oninit) setting.oninit(textarea);
@@ -1081,7 +1111,7 @@
 								type: "text",
 								maxLength: 1,
 								className: "keybind-input",
-								value: setting.value ? setting.value() : settings[key],
+								value: setting.value?.() ?? settings[key],
 								...events,
 							});
 							const label = document.createElement("label");
@@ -1090,6 +1120,28 @@
 							label.style.flex = "0 1 calc(50% - var(--spacing))";
 							if (setting.oninit) setting.oninit(input);
 							return label;
+						case "color":
+							const colorInput = Object.assign(document.createElement("input"), {
+								type: "color",
+								className: "rounded-md border-2 border-gray-200 p-1",
+								value: setting.value?.() ?? settings[key],
+								...events,
+							});
+							if (setting.oninit) setting.oninit(colorInput);
+							return withLabel([setting.name, colorInput]);
+						case "range":
+							console.log(setting.value?.() ?? settings[key]);
+							const rangeInput = Object.assign(document.createElement("input"), {
+								type: "range",
+								className: "rounded-md border-2 border-gray-200 p-1",
+								min: setting.min,
+								max: setting.max,
+								step: setting.step,
+								value: setting.value?.() ?? settings[key],
+								...events,
+							});
+							if (setting.oninit) setting.oninit(rangeInput);
+							return withLabel([setting.name, rangeInput]);
 					}
 				})
 			);

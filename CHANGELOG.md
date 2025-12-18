@@ -28,7 +28,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
   - Censors config modal (see each censor rects as a list and can edit each of it's properties + delete them)
 - Settings modal with :
   - 'UI Theme' (added dark mode, is set as default if the user has dark mode as their default system theme)
-  - 'Censor' (json textarea)
+  - 'Censor' (color and alpha + json textarea)
 - `saveKeybind` function (save a single keybind by it's key)
 ### Fixed
 - Fix the Censors not showing on page load until an interaction with the map happens
