@@ -9,7 +9,6 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - being able to switch from multiple ghost images
 - UI theme (dark mode)
 - make syncable censors
-- make it possible to still pan and zoom the canvas with MMB and scroll wheel while drawing censor rects
 
 ## [Unreleased] (done)
 ### Changed
@@ -20,6 +19,10 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - small refactor of the censor drawing code
 ### Added
 - 'Add one Censor Rect at Mouse' keybind => simulates the mouse click action when censor mode is enabled
+- Make it possible to still pan with MMB and zoom with scroll wheel in the canvas while in censor mode
+### Fixed
+- Fix the Censors not showing on page load until an interaction with the map happens
+- Censors being offset by .5 of a pixel
 
 ## [0.5.3] - 2025-11-05
 ### Changed

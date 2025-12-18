@@ -391,7 +391,12 @@
 		drawCensorRects();
 	}
 
+	censorCanvas.addEventListener("wheel", (e) =>
+		map.getCanvas().dispatchEvent(new WheelEvent(e.type, e))
+	);
+
 	censorCanvas.addEventListener("mousedown", (e) => {
+		if (e.button === 1) map.getCanvas().dispatchEvent(new MouseEvent(e.type, e));
 		if (!censorMode || e.button !== 0) return;
 		e.preventDefault();
 		e.stopPropagation();
@@ -399,6 +404,7 @@
 	});
 
 	censorCanvas.addEventListener("mousemove", (e) => {
+		if (e.buttons >= 4 && e.buttons < 8) map.getCanvas().dispatchEvent(new MouseEvent(e.type, e));
 		if (!censorMode || !isDraggingCensor || !censorStartPoint) return;
 
 		e.preventDefault();
@@ -412,8 +418,8 @@
 		const maxY = Math.max(censorStartPoint.gridY, point.gridY);
 
 		tempCensorRect = {
-			gridX: minX - 0.5,
-			gridY: minY - 0.5,
+			gridX: minX,
+			gridY: minY,
 			width: maxX - minX + 1,
 			height: maxY - minY + 1,
 		};
@@ -422,6 +428,7 @@
 	});
 
 	censorCanvas.addEventListener("mouseup", (e) => {
+		if (e.button === 1) map.getCanvas().dispatchEvent(new MouseEvent(e.type, e));
 		if (!censorMode || !isDraggingCensor || e.button !== 0) return;
 		e.preventDefault();
 		e.stopPropagation();
@@ -438,8 +445,8 @@
 	});
 
 	function drawCensorRect(ctx, rect, gSize, color) {
-		const topLeftMerc = [rect.gridX * gSize, (rect.gridY + rect.height) * gSize];
-		const bottomRightMerc = [(rect.gridX + rect.width) * gSize, rect.gridY * gSize];
+		const topLeftMerc = [(rect.gridX - 0.5) * gSize, (rect.gridY - 0.5 + rect.height) * gSize];
+		const bottomRightMerc = [(rect.gridX - 0.5 + rect.width) * gSize, (rect.gridY - 0.5) * gSize];
 
 		const topLeftScreen = map.project(turf.toWgs84(topLeftMerc));
 		const bottomRightScreen = map.project(turf.toWgs84(bottomRightMerc));
@@ -508,6 +515,7 @@
 	waitForMap(() => {
 		["move", "rotate", "zoom"].forEach((ev) => map.on(ev, drawCensorRects));
 		new ResizeObserver(drawCensorRects).observe(map.getContainer());
+		map.once("load", drawCensorRects);
 	});
 	//#endregion Censor
 
