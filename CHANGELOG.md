@@ -11,7 +11,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - save ghost image with position (import/export)
 - zoom based on pixel size ([issue#3](https://github.com/thin-kbot/geopixels-plusplus/issues/3))
 
-## [Unreleased] (done)
+## [0.6.0] - 2025-12-18
 ### Changed
 - Small visual improvement to the `SelectMenuButton` component
 - Decluttered the ghost's and profile's UI by making the buttons collapsible
