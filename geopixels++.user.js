@@ -133,8 +133,8 @@
 				}
 				themeStyle.innerHTML = THEMES[val] ? THEMES[val].style() : "";
 			},
-			onchange: function (e) {
-				this.apply(e.target.value);
+			onchange: (e) => {
+				SETTINGS.theme.apply(e.target.value);
 				saveSetting("theme", e.target.value);
 			},
 		},
