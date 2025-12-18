@@ -120,7 +120,7 @@
 	const SETTINGS = {
 		theme: {
 			name: "UI Theme",
-			type: "select",
+			element: "select",
 			category: SETTINGS_CATEGORIES.appearance,
 			options: Object.entries(THEMES).map(([id, { name }]) => ({ value: id, text: name })),
 			default: "system",
@@ -133,88 +133,113 @@
 				}
 				themeStyle.innerHTML = THEMES[val] ? THEMES[val].style() : "";
 			},
-			onchange: (e) => {
-				SETTINGS.theme.apply(e.target.value);
-				saveSetting("theme", e.target.value);
+			attributes: {
+				onchange: (e) => {
+					SETTINGS.theme.apply(e.target.value);
+					saveSetting("theme", e.target.value);
+				},
 			},
 		},
 		censorColor: {
 			name: "Censor rects color",
-			type: "color",
+			element: "input",
 			category: SETTINGS_CATEGORIES.censor,
 			default: "#000",
-			onchange: (e) => {
-				saveSetting("censorColor", e.target.value);
-				drawCensorRects();
-			},
-			oninput: (e) => {
-				settings.censorColor = e.target.value;
-				drawCensorRects();
+			attributes: {
+				type: "color",
+				onchange: (e) => {
+					saveSetting("censorColor", e.target.value);
+					drawCensorRects();
+				},
+				oninput: (e) => {
+					settings.censorColor = e.target.value;
+					drawCensorRects();
+				},
 			},
 		},
 		censorAlpha: {
 			name: "Censor rects alpha",
-			type: "range",
+			element: "input",
 			category: SETTINGS_CATEGORIES.censor,
-			min: 0,
-			max: 1,
-			step: 0.01,
 			default: 1,
-			onchange: (e) => {
-				saveSetting("censorAlpha", e.target.value);
-				drawCensorRects();
-			},
-			oninput: (e) => {
-				settings.censorAlpha = e.target.value;
-				drawCensorRects();
+			attributes: {
+				type: "range",
+				min: 0,
+				max: 1,
+				step: 0.01,
+				onchange: (e) => {
+					saveSetting("censorAlpha", e.target.value);
+					drawCensorRects();
+				},
+				oninput: (e) => {
+					settings.censorAlpha = e.target.value;
+					drawCensorRects();
+				},
 			},
 		},
 		censorTextarea: {
 			name: "Censor config",
-			type: "textarea",
+			element: "textarea",
 			category: SETTINGS_CATEGORIES.censor,
 			value: () => JSON.stringify(getCensorRects()),
-			oninit: (elm) =>
+			init: (elm) =>
 				document.addEventListener(
 					"censorRectsChanged",
 					() => (elm.value = JSON.stringify(getCensorRects()))
 				),
-			onchange: (e) => {
-				if (!isJsonString(e.target.value)) return alert("Invalid json.");
-
-				const config = JSON.parse(e.target.value);
-				if (!isValidCensorConfig(config)) return alert("Invalid censor config");
-
-				saveCensorRects(config);
-				e.target.style.borderColor = "green";
-				setTimeout(() => (e.target.style.borderColor = ""), 1000);
-				log(LOG_LEVELS.info, "replaced Censor rects with", config);
+			reset: (elm) => {
+				elm.value = SETTINGS.censorTextarea.value();
+				elm.dispatchEvent(new Event("input"));
 			},
-			oninput: (e) => {
-				if (!isJsonString(e.target.value) || !isValidCensorConfig(JSON.parse(e.target.value)))
-					e.target.style.borderColor = "red";
-				else e.target.style.borderColor = "";
+			attributes: {
+				onchange: (e) => {
+					let config;
+					try {
+						config = JSON.parse(e.target.value);
+					} catch (err) {
+						return alert(`Invalid json: ${err.message}`);
+					}
+
+					if (!isValidCensorConfig(config)) return alert("Invalid censor config");
+
+					saveCensorRects(config);
+					validateInput(e.target);
+					log(LOG_LEVELS.info, "replaced Censor rects with", config);
+				},
+				oninput: (e) => {
+					if (!isJsonString(e.target.value) || !isValidCensorConfig(JSON.parse(e.target.value)))
+						e.target.style.borderColor = "red";
+					else e.target.style.borderColor = "";
+				},
 			},
 		},
 		openCensorConfig: {
 			name: "Open Censors Config",
-			type: "button",
+			element: "button",
 			category: SETTINGS_CATEGORIES.censor,
-			onclick: createCensorsConfigModal,
+			attributes: { onclick: createCensorsConfigModal },
 		},
 		...Object.fromEntries(
 			Object.entries(KEY_BINDINGS).map(([id, binding]) => [
 				`keybind_${id}`,
 				{
 					name: `${binding.text}`,
-					type: "keybind",
+					element: "input",
 					category: SETTINGS_CATEGORIES.keybinds,
 					value: () => keybinds[id] || "",
-					onclick: (e) => e.target.select(),
-					onchange: (e) => {
-						saveKeybind(id, e.target.value.trim().toLowerCase());
-						e.target.style.backgroundColor = "green";
-						setTimeout(() => (e.target.style.backgroundColor = ""), 1000);
+					...(binding.defaultKey && {
+						reset: (elm) => {
+							elm.value = binding.defaultKey;
+							elm.dispatchEvent(new Event("change"));
+						},
+					}),
+					attributes: {
+						type: "keybind",
+						onclick: (e) => e.target.select(),
+						onchange: (e) => {
+							saveKeybind(id, e.target.value.trim().toLowerCase());
+							validateInput(e.target);
+						},
 					},
 				},
 			])
@@ -252,6 +277,12 @@
 			gridX: Math.round(merc[0] / gridSize),
 			gridY: Math.round(merc[1] / gridSize),
 		};
+	}
+
+	function validateInput(elm) {
+		elm.style.borderColor = "green";
+		const td = parseFloat(getComputedStyle(elm).transitionDuration) * 2;
+		setTimeout(() => (elm.style.borderColor = ""), (td ?? 0.5) * 1000);
 	}
 	//#endregion Utils
 
@@ -768,6 +799,88 @@
 
 	for (const [id, val] of Object.entries(settings))
 		if (SETTINGS[id] && SETTINGS[id].apply) SETTINGS[id].apply(val);
+
+	const SETTINGS_CLASSES = {
+		select: "rounded-md border-2 border-gray-200 sm:text-sm p-2",
+		textarea:
+			"w-full h-32 rounded-md border-2 border-gray-200 p-2 font-mono resize-vertical outline-none transition",
+		button:
+			"px-4 py-2 rounded-lg shadow transition cursor-pointer bg-blue-500 hover:bg-blue-600 text-white",
+		input: {
+			color: "rounded-md border-2 border-gray-200 p-1",
+			range: "py-1.5",
+			keybind: "keybind-input",
+		},
+	};
+	function makeSettingUI(key, s) {
+		const baseClass =
+			typeof SETTINGS_CLASSES[s.element] === "string"
+				? SETTINGS_CLASSES[s.element]
+				: SETTINGS_CLASSES[s.element]?.[s.attributes.type] ?? "";
+
+		const input = Object.assign(document.createElement(s.element), {
+			className: baseClass,
+			...s.attributes,
+			value: s.value?.() ?? settings[key],
+		});
+
+		if (s.init) s.init(input);
+
+		if (s.element == "button") {
+			input.innerText = s.name;
+			return input;
+		}
+
+		if (s.element == "select") {
+			input.append(
+				...s.options.map(({ value, text }) =>
+					Object.assign(document.createElement("option"), {
+						value,
+						innerText: text,
+					})
+				)
+			);
+		}
+
+		const label = document.createElement("label");
+		label.className = "text-sm font-medium text-gray-700 flex";
+
+		const isKeybind = s.element == "input" && s.attributes.type == "keybind";
+
+		if (s.reset || s.default !== undefined) {
+			const resetButton = makeButton("⟲", () => {
+				if (s.reset) s.reset(input);
+				else {
+					input.value = s.default;
+					input.dispatchEvent(new Event("change"));
+				}
+			});
+			resetButton.className = "cursor-pointer absolute top-0 h-5 w-5 text-xl";
+			resetButton.style.lineHeight = "var(--text-xl)";
+			label.appendChild(resetButton);
+			label.className += " relative";
+			if (isKeybind) {
+				label.style.paddingLeft = "calc(var(--text-xl))";
+				resetButton.className += " left-0";
+			} else {
+				label.style.paddingRight = "calc(var(--text-xl) + 5px)";
+				resetButton.className += " right-0";
+			}
+		}
+
+		if (isKeybind) {
+			input.maxLength = 1;
+			label.className += " flex-row items-center gap-1";
+			label.style.flex = "0 1 calc(50% - var(--spacing))";
+			label.append(input, s.name);
+			return label;
+		}
+
+		label.className += " flex-col";
+		if (s.element == "textarea") label.className += " w-full";
+		label.append(s.name, input);
+		return label;
+	}
 	//#endregion settings
 
 	//#region UI Helpers
@@ -1055,13 +1168,6 @@
 			groupedSettings[setting.category].push({ key, setting });
 		}
 
-		const withLabel = (inner, classes = "") => {
-			const label = document.createElement("label");
-			label.className = `text-sm font-medium text-gray-700 flex flex-col ${classes}`;
-			label.append(...(Array.isArray(inner) ? inner : [inner]));
-			return label;
-		};
-
 		const div = document.createElement("div");
 		div.className = "flex flex-wrap gap-2 items-end max-w-2xl overflow-y-auto";
 		Object.entries(groupedSettings).forEach(([category, sets]) => {
@@ -1069,82 +1175,7 @@
 			categoryTitle.className =
 				"w-full text-xl font-semibold text-gray-700 mt-4 mb-2 border-b border-gray-300";
 			categoryTitle.innerText = category;
-			div.append(
-				categoryTitle,
-				...sets.map(({ key, setting }) => {
-					const events = Object.fromEntries(
-						Object.entries(setting).filter(([k, _]) => k.startsWith("on"))
-					);
-
-					switch (setting.type) {
-						case "select":
-							const select = Object.assign(document.createElement("select"), {
-								className: "rounded-md border-2 border-gray-200 sm:text-sm p-2",
-								...events,
-							});
-							select.append(
-								...setting.options.map(({ value, text }) =>
-									Object.assign(document.createElement("option"), {
-										value,
-										innerText: text,
-										selected: (setting.value?.() ?? settings[key]) === value,
-									})
-								)
-							);
-							if (setting.oninit) setting.oninit(select);
-							return withLabel([setting.name, select]);
-						case "textarea":
-							const textarea = Object.assign(document.createElement("textarea"), {
-								className:
-									"w-full h-32 rounded-md border-2 border-gray-200 p-2 font-mono resize-vertical outline-none transition",
-								value: setting.value?.() ?? settings[key],
-								...events,
-							});
-							if (setting.oninit) setting.oninit(textarea);
-							return withLabel([setting.name, textarea], "w-full");
-						case "button":
-							const button = makeBasicButton(setting.name, setting.onclick);
-							if (setting.oninit) setting.oninit(button);
-							return Object.assign(button, events);
-						case "keybind":
-							const input = Object.assign(document.createElement("input"), {
-								type: "text",
-								maxLength: 1,
-								className: "keybind-input",
-								value: setting.value?.() ?? settings[key],
-								...events,
-							});
-							const label = document.createElement("label");
-							label.className = `text-sm font-medium text-gray-700 flex flex-row items-center gap-1`;
-							label.append(input, setting.name);
-							label.style.flex = "0 1 calc(50% - var(--spacing))";
-							if (setting.oninit) setting.oninit(input);
-							return label;
-						case "color":
-							const colorInput = Object.assign(document.createElement("input"), {
-								type: "color",
-								className: "rounded-md border-2 border-gray-200 p-1",
-								value: setting.value?.() ?? settings[key],
-								...events,
-							});
-							if (setting.oninit) setting.oninit(colorInput);
-							return withLabel([setting.name, colorInput]);
-						case "range":
-							console.log(setting.value?.() ?? settings[key]);
-							const rangeInput = Object.assign(document.createElement("input"), {
-								type: "range",
-								className: "rounded-md border-2 border-gray-200 p-1",
-								min: setting.min,
-								max: setting.max,
-								step: setting.step,
-								value: setting.value?.() ?? settings[key],
-								...events,
-							});
-							if (setting.oninit) setting.oninit(rangeInput);
-							return withLabel([setting.name, rangeInput]);
-					}
-				})
-			);
+			div.append(categoryTitle, ...sets.map(({ key, setting }) => makeSettingUI(key, setting)));
 		});
 
 		createModal("Settings", div);
