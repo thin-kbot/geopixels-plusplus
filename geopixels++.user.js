@@ -143,6 +143,11 @@
 			type: "textarea",
 			category: SETTINGS_CATEGORIES.censor,
 			value: () => JSON.stringify(getCensorRects()),
+			oninit: (elm) =>
+				document.addEventListener(
+					"censorRectsChanged",
+					() => (elm.value = JSON.stringify(getCensorRects()))
+				),
 			onchange: (e) => {
 				if (!isJsonString(e.target.value)) return alert("Invalid json.");
 
@@ -592,6 +597,7 @@
 		censorRects = r;
 		localStorage.setItem(STORAGE_KEYS.censor, JSON.stringify(r));
 		drawCensorRects();
+		document.dispatchEvent(new CustomEvent("censorRectsChanged"));
 	}
 	const addCensorRect = (rect) => saveCensorRects([...getCensorRects(), rect]);
 
@@ -1054,6 +1060,7 @@
 									})
 								)
 							);
+							if (setting.oninit) setting.oninit(select);
 							return withLabel([setting.name, select]);
 						case "textarea":
 							const textarea = Object.assign(document.createElement("textarea"), {
@@ -1062,9 +1069,12 @@
 								value: setting.value ? setting.value() : settings[key],
 								...events,
 							});
+							if (setting.oninit) setting.oninit(textarea);
 							return withLabel([setting.name, textarea], "w-full");
 						case "button":
-							return Object.assign(makeBasicButton(setting.name, setting.onclick), events);
+							const button = makeBasicButton(setting.name, setting.onclick);
+							if (setting.oninit) setting.oninit(button);
+							return Object.assign(button, events);
 						case "keybind":
 							const input = Object.assign(document.createElement("input"), {
 								type: "text",
@@ -1077,6 +1087,7 @@
 							label.className = `text-sm font-medium text-gray-700 flex flex-row items-center gap-1`;
 							label.append(input, setting.name);
 							label.style.flex = "0 1 calc(50% - var(--spacing))";
+							if (setting.oninit) setting.oninit(input);
 							return label;
 					}
 				})
