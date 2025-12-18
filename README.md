@@ -1,27 +1,15 @@
 # GeoPixels++
 A bunch of QOL features for [GeoPixels](https://geopixels.net/) :
-- Add buttons to the ghost's UI :
-  - "Enable Only Owned Ghost Colors" : activates only ghost colors you own
-  - "Get Ghost Colors" : copies all ghost colors to clipboard
-  - "Get Enabled Ghost Colors" : copies currently enabled ghost colors to clipboard
-  - "Set Enabled Ghost Colors" : set enabled ghost colors from clipboard or manual input
-- Add buttons to the shop/profile UI :
-  - "Get User Colors" : copies all user colors to clipboard
-  - "Get Enabled Colors" : copies currently enabled user colors to clipboard
-  - "Set Enabled Colors" : set enabled user colors from clipboard or manual input
+- Add buttons to the ghost's UI ("Enable Only Owned Ghost Colors", "Get Ghost Colors", "Get Enabled Ghost Colors", "Set Enabled Ghost Colors")
+- Add buttons to the shop/profile UI ("Get User Colors", "Get Enabled Colors", "Set Enabled Colors")
 - Add a main menu item `GeoPxels++` with the these buttons :
   - `🎯` "Go to Coordinates" : moves to given coordinates (accepts coordinates or GeoPixels URLs)
   - `🧪` "Set Both Palettes" : sets user and ghost palettes simultaneously
   - `🎵` "Change Sound" : change the sounds of the website
   - `🚫` "Censor" : ability to censor part of the canvas
-    - "add a new censor manually" : input manually the parameters of your censor
     - "Toggle censor mode" : enter "censor mode" => draw censor rectangles directly on the canvas
-    - "clear censors" : delete all you censor rectangles
-    - "import censors (replace)" : replace your current censor configuration with the one you input
-    - "import censors (add)" : add all censors inputed to your config
-- Add new keybinds in the website's keybind menu : 
-  - "Toggle ghost image" : self explaining
-  - "Set ghost image's top left" : self explaining
+  - `⚙️` "Settings"
+- Add new keybinds in the website's keybind menu (see/change them in the settings or in geopixels' "Keyboard Shortcut" menu)
 
 ## installation
 1. install [Violentmonkey](https://violentmonkey.github.io/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/jinjaccalgkegednnccohejagnlnfdag)) or [Tampermonkey](https://www.tampermonkey.net/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/dhdgffkkebhmkfjojejmpbldmpobfkfo))
