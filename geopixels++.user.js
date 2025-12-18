@@ -797,7 +797,8 @@
 		}
 		modalContainer.appendChild(modal);
 
-		modalContainer.onclick = (e) => e.target === modalContainer && modal.close();
+		modal.onclick = (e) => e.stopPropagation();
+		modalContainer.onclick = () => modal.close();
 		const escHandler = (e) => e.key === "Escape" && modal.close();
 		document.addEventListener("keydown", escHandler);
 

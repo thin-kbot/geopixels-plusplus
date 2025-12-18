@@ -34,6 +34,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - Fix the Censors not showing on page load until an interaction with the map happens
 - Censors being offset by .5 of a pixel
 - Make the `SelectMenuButton` close when another one is opened or when the menu is closed
+- Fix clicks on labels not focusing the inputs in the modals
 ### Removed
 - "add a new censor manually", "clear censors", "export censors", "import censors (replace)" and "import censors (add)" buttons from the Censors SelectMenuButton
 
