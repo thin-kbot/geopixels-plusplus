@@ -27,6 +27,7 @@
 	const STORAGE_KEYS = {
 		censor: "geo++_censorRects",
 		keybinds: "geo++_keybinds",
+		settings: "geo++_settings",
 	};
 
 	const SOUNDS = [
@@ -90,6 +91,99 @@
 		},
 	};
 	let mouseX, mouseY;
+
+	const THEMES = {
+		system: {
+			name: "System default",
+			style: () =>
+				window.matchMedia("(prefers-color-scheme: dark)").matches
+					? THEMES.simple_black.style()
+					: "",
+		},
+		default: {
+			name: "GeoPixels++ Default",
+			style: () => "",
+		},
+		simple_black: {
+			name: "Simple Black",
+			style: () =>
+				":root{color-scheme:dark;--color-red-900:#ffe2e2;--color-red-800:#ffc9c9;--color-red-700:#ffa2a2;--color-red-600:#ff6467;--color-red-500:#fb2c36;--color-red-400:#e7000b;--color-red-300:#c10007;--color-red-200:#9f0712;--color-red-100:#82181a;--color-red-50:#460809;--color-orange-800:#ffd6a7;--color-orange-700:#ffb869;--color-orange-600:#ff8903;--color-orange-500:#ff6900;--color-orange-400:#f54900;--color-orange-200:#9f2d00;--color-orange-100:#7e2a0c;--color-orange-50:#441306;--color-yellow-900:#fef9c2;--color-yellow-800:#fff085;--color-yellow-700:#ffdf20;--color-yellow-600:#fdc700;--color-yellow-500:#f0b100;--color-yellow-400:#d08700;--color-yellow-300:#a65f00;--color-yellow-200:#894b00;--color-yellow-100:#733e0a;--color-yellow-50:#432004;--color-green-900:#dcfce7;--color-green-700:#7bf1a7;--color-green-600:#06df72;--color-green-500:#00c950;--color-green-200:#026630;--color-green-100:#0d542b;--color-green-50:#032e15;--color-sky-800:#b8e6fe;--color-sky-500:#00a6f4;--color-sky-200:#00598a;--color-sky-50:#052f4a;--color-blue-900:#dbeafe;--color-blue-800:#bedbff;--color-blue-700:#8ec5ff;--color-blue-600:#50a2ff;--color-blue-500:#2b7fff;--color-blue-400:#155dfb;--color-blue-300:#1447e6;--color-blue-200:#193cb8;--color-blue-100:#1c398e;--color-blue-50:#162556;--color-indigo-700:#a3b3ff;--color-indigo-600:#7c86ff;--color-indigo-500:#615fff;--color-purple-600:#c27aff;--color-purple-500:#ad46ff;--color-slate-700:#cad5e2;--color-slate-500:#62748e;--color-gray-900:#f3f4f6;--color-gray-800:#e5e7eb;--color-gray-700:#d1d5db;--color-gray-600:#99a1af;--color-gray-500:#6a7282;--color-gray-400:#4a5565;--color-gray-300:#364153;--color-gray-200:#1e2939;--color-gray-100:#101828;--color-gray-50:#030712;--color-white:#000;color:#fff}select{background:#000}.keybind-input{color:#d1d5db;background-color:#1f2937;border-color:#4b5563}",
+		},
+	};
+
+	const SETTINGS_CATEGORIES = {
+		appearance: "Appearance",
+		censor: "Censor",
+		keybinds: "Keybindings",
+	};
+
+	const SETTINGS = {
+		theme: {
+			name: "UI Theme",
+			type: "select",
+			category: SETTINGS_CATEGORIES.appearance,
+			options: Object.entries(THEMES).map(([id, { name }]) => ({ value: id, text: name })),
+			default: "system",
+			apply: (val) => {
+				let themeStyle = document.getElementById("gpp-theme-style");
+				if (!themeStyle) {
+					themeStyle = document.createElement("style");
+					themeStyle.id = "gpp-theme-style";
+					document.head.appendChild(themeStyle);
+				}
+				themeStyle.innerHTML = THEMES[val] ? THEMES[val].style() : "";
+			},
+			onchange: function (e) {
+				this.apply(e.target.value);
+				saveSetting("theme", e.target.value);
+			},
+		},
+		censorTextarea: {
+			name: "Censor config",
+			type: "textarea",
+			category: SETTINGS_CATEGORIES.censor,
+			value: () => JSON.stringify(getCensorRects()),
+			onchange: (e) => {
+				if (!isJsonString(e.target.value)) return alert("Invalid json.");
+
+				const config = JSON.parse(e.target.value);
+				if (!isValidCensorConfig(config)) return alert("Invalid censor config");
+
+				saveCensorRects(config);
+				e.target.style.borderColor = "green";
+				setTimeout(() => (e.target.style.borderColor = ""), 1000);
+				log(LOG_LEVELS.info, "replaced Censor rects with", config);
+			},
+			oninput: (e) => {
+				if (!isJsonString(e.target.value) || !isValidCensorConfig(JSON.parse(e.target.value)))
+					e.target.style.borderColor = "red";
+				else e.target.style.borderColor = "";
+			},
+		},
+		openCensorConfig: {
+			name: "Open Censors Config",
+			type: "button",
+			category: SETTINGS_CATEGORIES.censor,
+			onclick: createCensorsConfigModal,
+		},
+		...Object.fromEntries(
+			Object.entries(KEY_BINDINGS).map(([id, binding]) => [
+				`keybind_${id}`,
+				{
+					name: `${binding.text}`,
+					type: "keybind",
+					category: SETTINGS_CATEGORIES.keybinds,
+					value: () => keybinds[id] || "",
+					onclick: (e) => e.target.select(),
+					onchange: (e) => {
+						saveKeybind(id, e.target.value.trim().toLowerCase());
+						e.target.style.backgroundColor = "green";
+						setTimeout(() => (e.target.style.backgroundColor = ""), 1000);
+					},
+				},
+			])
+		),
+	};
 	//#endregion Global variables
 
 	//#region Utils
@@ -570,6 +664,10 @@
 		keybinds = kb;
 		localStorage.setItem(STORAGE_KEYS.keybinds, JSON.stringify(kb));
 	}
+	function saveKeybind(id, key) {
+		keybinds[id] = key;
+		saveKeybinds(keybinds);
+	}
 
 	document.getElementById("toggleKeybinds").addEventListener("click", () => {
 		for (const key in keybinds) {
@@ -607,6 +705,34 @@
 			);
 		});
 	//#endregion keybind
+
+	//#region settings
+	function isValidSettingsConfig(json, doReturn = false) {
+		const isValid =
+			json && typeof json === "object" && Object.keys(json).every((key) => SETTINGS[key]);
+		return doReturn ? (isValid ? json : false) : isValid;
+	}
+
+	let settings =
+		isValidSettingsConfig(JSON.parse(localStorage.getItem(STORAGE_KEYS.settings)), true) ||
+		Object.fromEntries(
+			Object.entries(SETTINGS)
+				.filter(([_, v]) => v.default)
+				.map(([id, { default: d }]) => [id, d])
+		);
+
+	Object.keys(SETTINGS).forEach((id) => {
+		if (SETTINGS[id].default && !settings.hasOwnProperty(id)) settings[id] = SETTINGS[id].default;
+	});
+
+	function saveSetting(id, val) {
+		settings[id] = val;
+		localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(settings));
+	}
+
+	for (const [id, val] of Object.entries(settings))
+		if (SETTINGS[id] && SETTINGS[id].apply) SETTINGS[id].apply(val);
+	//#endregion settings
 
 	//#region UI Helpers
 	function copyToClipboard(text) {
@@ -885,6 +1011,81 @@
 		refreshCensorList();
 	}
 
+	function createSettingsModal() {
+		const groupedSettings = {};
+		for (const [key, setting] of Object.entries(SETTINGS)) {
+			if (!groupedSettings[setting.category]) groupedSettings[setting.category] = [];
+			groupedSettings[setting.category].push({ key, setting });
+		}
+
+		const withLabel = (inner, classes = "") => {
+			const label = document.createElement("label");
+			label.className = `text-sm font-medium text-gray-700 flex flex-col ${classes}`;
+			label.append(...(Array.isArray(inner) ? inner : [inner]));
+			return label;
+		};
+
+		const div = document.createElement("div");
+		div.className = "flex flex-wrap gap-2 items-end max-w-2xl overflow-y-auto";
+		Object.entries(groupedSettings).forEach(([category, sets]) => {
+			const categoryTitle = document.createElement("h3");
+			categoryTitle.className =
+				"w-full text-xl font-semibold text-gray-700 mt-4 mb-2 border-b border-gray-300";
+			categoryTitle.innerText = category;
+			div.append(
+				categoryTitle,
+				...sets.map(({ key, setting }) => {
+					const events = Object.fromEntries(
+						Object.entries(setting).filter(([k, _]) => k.startsWith("on"))
+					);
+
+					switch (setting.type) {
+						case "select":
+							const select = Object.assign(document.createElement("select"), {
+								className: "rounded-md border-2 border-gray-200 sm:text-sm p-2",
+								...events,
+							});
+							select.append(
+								...setting.options.map(({ value, text }) =>
+									Object.assign(document.createElement("option"), {
+										value,
+										innerText: text,
+										selected: (setting.value ? setting.value() : settings[key]) === value,
+									})
+								)
+							);
+							return withLabel([setting.name, select]);
+						case "textarea":
+							const textarea = Object.assign(document.createElement("textarea"), {
+								className:
+									"w-full h-32 rounded-md border-2 border-gray-200 p-2 font-mono resize-vertical outline-none transition",
+								value: setting.value ? setting.value() : settings[key],
+								...events,
+							});
+							return withLabel([setting.name, textarea], "w-full");
+						case "button":
+							return Object.assign(makeBasicButton(setting.name, setting.onclick), events);
+						case "keybind":
+							const input = Object.assign(document.createElement("input"), {
+								type: "text",
+								maxLength: 1,
+								className: "keybind-input",
+								value: setting.value ? setting.value() : settings[key],
+								...events,
+							});
+							const label = document.createElement("label");
+							label.className = `text-sm font-medium text-gray-700 flex flex-row items-center gap-1`;
+							label.append(input, setting.name);
+							label.style.flex = "0 1 calc(50% - var(--spacing))";
+							return label;
+					}
+				})
+			);
+		});
+
+		createModal("Settings", div);
+	}
+
 	// Add buttons to ghost UI
 	addGPPButtonToggle(
 		document.querySelector("#ghostColorPaletteContainer>div"),
@@ -986,7 +1187,8 @@
 				innerText: "Open censors config",
 				onClick: createCensorsConfigModal,
 			},
-		])
+		]),
+		makeMenuButton("⚙️", "Settings", createSettingsModal)
 	);
 
 	//Add to the keybind Panel
@@ -997,11 +1199,11 @@
 				${Object.keys(KEY_BINDINGS)
 					.map(
 						(id) => `
-						<div class="flex items-center justify-between p-2">
-							<label for="gpp_keybind-${id}" class="text-gray-600">${KEY_BINDINGS[id].text}</label>
-							<input id="gpp_keybind-${id}" type="text" maxlength="1" class="keybind-input">
-						</div>
-					`
+							<div class="flex items-center justify-between p-2">
+								<label for="gpp_keybind-${id}" class="text-gray-600">${KEY_BINDINGS[id].text}</label>
+								<input id="gpp_keybind-${id}" type="text" maxlength="1" class="keybind-input">
+							</div>
+						`
 					)
 					.join("")}
 			</div>

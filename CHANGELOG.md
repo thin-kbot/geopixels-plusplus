@@ -7,8 +7,9 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 
 ## [Unreleased] (todo)
 - being able to switch from multiple ghost images
-- UI theme (dark mode)
 - make syncable censors
+- save ghost image with position (import/export)
+- zoom based on pixel size ([issue#3](https://github.com/thin-kbot/geopixels-plusplus/issues/3))
 
 ## [Unreleased] (done)
 ### Changed
@@ -25,6 +26,10 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
   - Option to delete censors with right click when in censor mode
   - Make it possible to still pan with MMB and zoom with scroll wheel in the canvas while in censor mode
   - Censors config modal (see each censor rects as a list and can edit each of it's properties + delete them)
+- Settings modal with :
+  - 'UI Theme' (added dark mode, is set as default if the user has dark mode as their default system theme)
+  - 'Censor' (json textarea)
+- `saveKeybind` function (save a single keybind by it's key)
 ### Fixed
 - Fix the Censors not showing on page load until an interaction with the map happens
 - Censors being offset by .5 of a pixel
