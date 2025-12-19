@@ -8,8 +8,11 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 ## [Unreleased] (todo)
 - being able to switch from multiple ghost images
 - make syncable censors
-- save ghost image with position (import/export)
+- save ghost image with position (import/export) ([issue#1](https://github.com/thin-kbot/geopixels-plusplus/issues/1))
 - zoom based on pixel size ([issue#3](https://github.com/thin-kbot/geopixels-plusplus/issues/3))
+
+## [Unreleased] (done)
+- Accept directly Strings as well as functions for themes
 
 ## [0.6.0] - 2025-12-18
 ### Changed

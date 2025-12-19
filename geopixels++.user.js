@@ -96,17 +96,15 @@
 		system: {
 			name: "System default",
 			style: () =>
-				window.matchMedia("(prefers-color-scheme: dark)").matches
-					? THEMES.simple_black.style()
-					: "",
+				window.matchMedia("(prefers-color-scheme: dark)").matches ? THEMES.simple_black.style : "",
 		},
 		default: {
 			name: "GeoPixels++ Default",
-			style: () => "",
+			style: "",
 		},
 		simple_black: {
 			name: "Simple Black",
-			style: () =>
+			style:
 				":root{color-scheme:dark;--color-red-900:#ffe2e2;--color-red-800:#ffc9c9;--color-red-700:#ffa2a2;--color-red-600:#ff6467;--color-red-500:#fb2c36;--color-red-400:#e7000b;--color-red-300:#c10007;--color-red-200:#9f0712;--color-red-100:#82181a;--color-red-50:#460809;--color-orange-800:#ffd6a7;--color-orange-700:#ffb869;--color-orange-600:#ff8903;--color-orange-500:#ff6900;--color-orange-400:#f54900;--color-orange-200:#9f2d00;--color-orange-100:#7e2a0c;--color-orange-50:#441306;--color-yellow-900:#fef9c2;--color-yellow-800:#fff085;--color-yellow-700:#ffdf20;--color-yellow-600:#fdc700;--color-yellow-500:#f0b100;--color-yellow-400:#d08700;--color-yellow-300:#a65f00;--color-yellow-200:#894b00;--color-yellow-100:#733e0a;--color-yellow-50:#432004;--color-green-900:#dcfce7;--color-green-700:#7bf1a7;--color-green-600:#06df72;--color-green-500:#00c950;--color-green-200:#026630;--color-green-100:#0d542b;--color-green-50:#032e15;--color-sky-800:#b8e6fe;--color-sky-500:#00a6f4;--color-sky-200:#00598a;--color-sky-50:#052f4a;--color-blue-900:#dbeafe;--color-blue-800:#bedbff;--color-blue-700:#8ec5ff;--color-blue-600:#50a2ff;--color-blue-500:#2b7fff;--color-blue-400:#155dfb;--color-blue-300:#1447e6;--color-blue-200:#193cb8;--color-blue-100:#1c398e;--color-blue-50:#162556;--color-indigo-700:#a3b3ff;--color-indigo-600:#7c86ff;--color-indigo-500:#615fff;--color-purple-600:#c27aff;--color-purple-500:#ad46ff;--color-slate-700:#cad5e2;--color-slate-500:#62748e;--color-gray-900:#f3f4f6;--color-gray-800:#e5e7eb;--color-gray-700:#d1d5db;--color-gray-600:#99a1af;--color-gray-500:#6a7282;--color-gray-400:#4a5565;--color-gray-300:#364153;--color-gray-200:#1e2939;--color-gray-100:#101828;--color-gray-50:#030712;--color-white:#000;color:#fff}select{background:#000}.keybind-input{color:#d1d5db;background-color:#1f2937;border-color:#4b5563}",
 		},
 	};
@@ -131,7 +129,8 @@
 					themeStyle.id = "gpp-theme-style";
 					document.head.appendChild(themeStyle);
 				}
-				themeStyle.innerHTML = THEMES[val] ? THEMES[val].style() : "";
+				themeStyle.innerHTML =
+					typeof THEMES[val]?.style === "function" ? THEMES[val].style() : THEMES[val]?.style ?? "";
 			},
 			attributes: {
 				onchange: (e) => {
@@ -857,6 +856,7 @@
 			});
 			resetButton.className = "cursor-pointer absolute top-0 h-5 w-5 text-xl";
 			resetButton.style.lineHeight = "var(--text-xl)";
+			resetButton.title = "reset";
 			label.appendChild(resetButton);
 			label.className += " relative";
 			if (isKeybind) {
