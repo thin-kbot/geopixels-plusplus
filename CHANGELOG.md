@@ -12,7 +12,12 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - zoom based on pixel size ([issue#3](https://github.com/thin-kbot/geopixels-plusplus/issues/3))
 
 ## [Unreleased] (done)
+### Changed
 - Accept directly Strings as well as functions for themes
+### Added
+- Make censors editable with ctrl + right click
+- Support for checkboxes in the settings
+- "Interact with censors out of censor mode" setting => if checked, you can delete/edit censor rects event when out of censor mode
 
 ## [0.6.0] - 2025-12-18
 ### Changed

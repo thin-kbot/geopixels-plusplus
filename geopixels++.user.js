@@ -51,6 +51,7 @@
 	let isDraggingCensor = false;
 	let censorStartPoint = null;
 	let tempCensorRect = null;
+	let oldCensorRect = null;
 	let censorCanvas;
 
 	const KEY_BINDINGS = {
@@ -174,6 +175,16 @@
 					settings.censorAlpha = e.target.value;
 					drawCensorRects();
 				},
+			},
+		},
+		doInteractCensor: {
+			name: "Interact with censors out of censor mode",
+			element: "input",
+			category: SETTINGS_CATEGORIES.censor,
+			default: true,
+			attributes: {
+				type: "checkbox",
+				onchange: (e) => saveSetting("doInteractCensor", e.target.checked),
 			},
 		},
 		censorTextarea: {
@@ -520,10 +531,7 @@
 		isDraggingCensor = false;
 		censorStartPoint = null;
 		tempCensorRect = null;
-
 		censorCanvas.style.pointerEvents = "none";
-		censorCanvas.style.cursor = "auto";
-
 		log(LOG_LEVELS.debug, "Censor mode disabled");
 	}
 
@@ -552,17 +560,53 @@
 		map.getCanvas().dispatchEvent(new WheelEvent(e.type, e))
 	);
 
-	censorCanvas.addEventListener("mousedown", (e) => {
-		if (e.button === 1) map.getCanvas().dispatchEvent(new MouseEvent(e.type, e));
-		if (!censorMode || e.button !== 0) return;
+	window.addEventListener("mousedown", (e) => {
+		if (
+			(!censorMode && !settings.doInteractCensor) ||
+			(e.target !== censorCanvas && e.target !== map.getCanvas())
+		)
+			return;
+		if (censorMode) {
+			if (e.button === 0) startCensorDraw();
+			else if (e.button === 1) map.getCanvas().dispatchEvent(new MouseEvent(e.type, e));
+		}
 		e.preventDefault();
 		e.stopPropagation();
-		startCensorDraw();
+		if (e.button === 2) {
+			const point = screenPointToGrid(censorCanvas, e.clientX, e.clientY);
+			const rects = getCensorRects();
+			const rectIdx = rects.findIndex(
+				(rect) =>
+					point.gridX >= rect.gridX &&
+					point.gridX < rect.gridX + rect.width &&
+					point.gridY >= rect.gridY &&
+					point.gridY < rect.gridY + rect.height
+			);
+			if (rectIdx !== -1) {
+				if (e.ctrlKey) {
+					const rect = rects[rectIdx];
+					const isTop = rect.gridY + rect.height / 2 > point.gridY;
+					const isLeft = rect.gridX + rect.width / 2 > point.gridX;
+					isDraggingCensor = true;
+					censorStartPoint = {
+						gridX: rect.gridX + (isLeft ? rect.width : 0),
+						gridY: rect.gridY + (isTop ? rect.height : 0),
+					};
+					oldCensorRect = rects.splice(rectIdx, 1)[0];
+					saveCensorRects(rects);
+					window.dispatchEvent(new MouseEvent("mousemove", e));
+				} else if (confirm(`Remove censor rect?`)) {
+					rects.splice(rectIdx, 1);
+					saveCensorRects(rects);
+				}
+			}
+		}
 	});
 
-	censorCanvas.addEventListener("mousemove", (e) => {
-		if (e.buttons >= 4 && e.buttons < 8) map.getCanvas().dispatchEvent(new MouseEvent(e.type, e));
-		if (!censorMode || !isDraggingCensor || !censorStartPoint) return;
+	window.addEventListener("mousemove", (e) => {
+		if (censorMode && e.buttons == 4) map.getCanvas().dispatchEvent(new MouseEvent(e.type, e));
+		if ((!censorMode && !settings.doInteractCensor) || !isDraggingCensor || !censorStartPoint)
+			return;
 
 		e.preventDefault();
 		e.stopPropagation();
@@ -584,41 +628,29 @@
 		drawCensorRects();
 	});
 
-	censorCanvas.addEventListener("mouseup", (e) => {
-		if (e.button === 1) map.getCanvas().dispatchEvent(new MouseEvent(e.type, e));
-		if (!censorMode || !isDraggingCensor || e.button !== 0) return;
+	window.addEventListener("mouseup", (e) => {
+		if (censorMode && e.button === 1) map.getCanvas().dispatchEvent(new MouseEvent(e.type, e));
+		if (
+			(!censorMode && !settings.doInteractCensor) ||
+			!isDraggingCensor ||
+			(e.button !== 0 && e.button !== 2)
+		)
+			return;
 		e.preventDefault();
 		e.stopPropagation();
 		endCensorDraw();
 	});
 
-	censorCanvas.addEventListener("mouseleave", () => {
+	window.addEventListener("mouseleave", () => {
+		if (!censorMode && !settings.doInteractCensor) return;
 		if (isDraggingCensor) {
+			if (oldCensorRect) addCensorRect(oldCensorRect);
+			oldCensorRect = null;
 			isDraggingCensor = false;
 			censorStartPoint = null;
 			tempCensorRect = null;
 			drawCensorRects();
 		}
-	});
-
-	censorCanvas.addEventListener("contextmenu", (e) => {
-		if (!censorMode) return;
-		e.preventDefault();
-		e.stopPropagation();
-		const point = screenPointToGrid(censorCanvas, e.clientX, e.clientY);
-		const rects = getCensorRects();
-		const rectIdx = rects.findIndex(
-			(rect) =>
-				point.gridX >= rect.gridX &&
-				point.gridX < rect.gridX + rect.width &&
-				point.gridY >= rect.gridY &&
-				point.gridY < rect.gridY + rect.height
-		);
-		if (rectIdx !== -1 && confirm(`Remove censor rect?`)) {
-			rects.splice(rectIdx, 1);
-			saveCensorRects(rects);
-		}
-		return false;
 	});
 
 	function drawCensorRect(ctx, rect, gSize, color, a = 1) {
@@ -672,7 +704,7 @@
 
 		const gSize = usw.gridSize || gridSize || 25;
 
-		if (censorMode && isDraggingCensor && tempCensorRect)
+		if ((censorMode || settings.doInteractCensor) && isDraggingCensor && tempCensorRect)
 			drawCensorRect(ctx, tempCensorRect, gSize, settings.censorColor, settings.censorAlpha / 1.5);
 
 		const rects = getCensorRects();
@@ -806,9 +838,10 @@
 		button:
 			"px-4 py-2 rounded-lg shadow transition cursor-pointer bg-blue-500 hover:bg-blue-600 text-white",
 		input: {
-			color: "rounded-md border-2 border-gray-200 p-1",
-			range: "py-1.5",
+			color: "rounded-md border-2 border-gray-200 p-1 cursor-pointer",
+			range: "py-1.5 cursor-pointer",
 			keybind: "keybind-input",
+			checkbox: "cursor-pointer h-6 w-6",
 		},
 	};
 	function makeSettingUI(key, s) {
@@ -820,7 +853,7 @@
 		const input = Object.assign(document.createElement(s.element), {
 			className: baseClass,
 			...s.attributes,
-			value: s.value?.() ?? settings[key],
+			[s.attributes.type === "checkbox" ? "checked" : "value"]: s.value?.() ?? settings[key],
 		});
 
 		if (s.init) s.init(input);
@@ -844,7 +877,22 @@
 		const label = document.createElement("label");
 		label.className = "text-sm font-medium text-gray-700 flex";
 
-		const isKeybind = s.element == "input" && s.attributes.type == "keybind";
+		const isKeybind = s.attributes.type == "keybind";
+		const isRow = isKeybind || s.attributes.type == "checkbox";
+
+		if (isKeybind) {
+			input.maxLength = 1;
+			label.style.flex = "0 1 calc(50% - var(--spacing))";
+		}
+		if (isRow) {
+			label.className += " flex-row items-center gap-1";
+			label.append(input, s.name);
+		} else {
+			label.className += " flex-col items-start";
+			label.append(s.name, input);
+		}
+
+		if (s.element == "textarea") label.className += " w-full";
 
 		if (s.reset || s.default !== undefined) {
 			const resetButton = makeButton("⟲", () => {
@@ -867,18 +915,6 @@
 				resetButton.className += " right-0";
 			}
 		}
-
-		if (isKeybind) {
-			input.maxLength = 1;
-			label.className += " flex-row items-center gap-1";
-			label.style.flex = "0 1 calc(50% - var(--spacing))";
-			label.append(input, s.name);
-			return label;
-		}
-
-		label.className += " flex-col";
-		if (s.element == "textarea") label.className += " w-full";
-		label.append(s.name, input);
 		return label;
 	}
 	//#endregion settings
