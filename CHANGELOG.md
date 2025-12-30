@@ -11,7 +11,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - save ghost image with position (import/export) ([issue#1](https://github.com/thin-kbot/geopixels-plusplus/issues/1))
 - zoom based on pixel size ([issue#3](https://github.com/thin-kbot/geopixels-plusplus/issues/3))
 
-## [Unreleased] (done)
+## [0.7.0] - 2025-12-30
 ### Changed
 - Accept directly Strings as well as functions for themes
 ### Added
