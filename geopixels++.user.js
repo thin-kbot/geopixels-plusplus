@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GeoPixels++
 // @description  QOL features for https://geopixels.net/ with color palette management
-// @author       thin-kbot, Observable, h65e3j
+// @author       thin-kbot, Observable, Phlegethonia, h65e3j
 // @version      0.6.0
 // @match        https://*.geopixels.net/*
 // @namespace    https://github.com/thin-kbot
@@ -294,6 +294,15 @@
 		const td = parseFloat(getComputedStyle(elm).transitionDuration) * 2;
 		setTimeout(() => (elm.style.borderColor = ""), (td ?? 0.5) * 1000);
 	}
+
+	function getAllCoordsBetween(a, b, size = 1) {
+		const coords = [];
+		for (let x = Math.min(a.x, b.x); x <= Math.max(a.x, b.x); x += size)
+			for (let y = Math.min(a.y, b.y); y <= Math.max(a.y, b.y); y += size) coords.push({ x, y });
+		return coords;
+	}
+
+	const snapToTile = (value) => Math.floor(value / SYNC_TILE_SIZE) * SYNC_TILE_SIZE;
 	//#endregion Utils
 
 	//#region Color Utils
@@ -918,6 +927,80 @@
 		return label;
 	}
 	//#endregion settings
+
+	//#region Ghost colors progress
+	function updateGhostPaletteProgress() {
+		if (!ghostImage || !ghostImageOriginalData || !ghostImageTopLeft) return;
+
+		const { gridX, gridY } = ghostImageTopLeft;
+		const { width, height } = ghostImage;
+
+		const mapCanvas = Object.assign(document.createElement("canvas"), { width, height });
+		const mapCtx = mapCanvas.getContext("2d");
+
+		mapCtx.setTransform(1, 0, 0, -1, -gridX, gridY + 1);
+
+		for (const { x, y } of getAllCoordsBetween(
+			{ x: snapToTile(gridX), y: snapToTile(gridY) },
+			{ x: snapToTile(gridX + width), y: snapToTile(gridY - height) },
+			SYNC_TILE_SIZE
+		)) {
+			const tileData = tileImageCache.get(`${x},${y}`);
+			if (tileData?.colorBitmap) mapCtx.drawImage(tileData.colorBitmap, x, y);
+		}
+
+		mapCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+		const mapData = mapCtx.getImageData(0, 0, width, height).data;
+		const ghostData = ghostImageOriginalData.data;
+		const matchingColorMap = new Map();
+
+		for (let i = 0; i < ghostData.length; i += 4) {
+			if (ghostData[i + 3] <= 1) continue;
+			const mapHex = rgbaToHex(mapData[i], mapData[i + 1], mapData[i + 2], mapData[i + 3]);
+			const hex = rgbaToHex(ghostData[i], ghostData[i + 1], ghostData[i + 2], ghostData[i + 3]);
+			if (hex == mapHex) matchingColorMap.set(hex, (matchingColorMap.get(hex) ?? 0) + 1);
+		}
+
+		const container = document.getElementById("ghostColorPalette");
+
+		for (const { rgba, hex, totalCount } of ghostPaletteColors) {
+			const swatch = container.querySelector(`[data-color-rgba="${rgba}"]`);
+			if (!swatch) continue;
+			swatch.style.position = "relative";
+
+			const completed = matchingColorMap.get(toFullHex(hex)) ?? 0;
+			const progress = completed / totalCount;
+			const percent = Math.floor(progress * 1000) / 10;
+
+			swatch.title = `${hex}\n${completed} / ${totalCount} pixels\n${percent}%`;
+
+			let icon = swatch.querySelector("span");
+			if (!icon) {
+				icon = document.createElement("span");
+				icon.className =
+					"absolute h-3 w-3 rounded-full border-2 border-white text-white font-bold flex justify-center items-center";
+				Object.assign(icon.style, { top: "-3px", right: "-3px", fontSize: "0.6rem" });
+				swatch.appendChild(icon);
+			}
+
+			icon.textContent = progress === 1 ? "✓" : "";
+			icon.style.backgroundColor =
+				progress === 0 ? "#000" : `hsl(${360 - progress * 240}, 100%, 50%)`;
+		}
+	}
+
+	const populateColorPaletteUI_old = usw.populateColorPaletteUI;
+	usw.populateColorPaletteUI = function () {
+		populateColorPaletteUI_old();
+		updateGhostPaletteProgress();
+	};
+	const calculateGhostProgress_old = usw.calculateGhostProgress;
+	usw.calculateGhostProgress = function () {
+		calculateGhostProgress_old();
+		updateGhostPaletteProgress();
+	};
+	//#endregion Ghost colors progress
 
 	//#region UI Helpers
 	function copyToClipboard(text) {

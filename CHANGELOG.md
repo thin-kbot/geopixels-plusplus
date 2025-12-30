@@ -18,6 +18,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - Make censors editable with ctrl + right click
 - Support for checkboxes in the settings
 - "Interact with censors out of censor mode" setting => if checked, you can delete/edit censor rects event when out of censor mode
+- Ghost Image's progress by color *(code modified from `Phlegethonia`)*
 ### Fixed
 - Dark theme for pfp and banner
 
