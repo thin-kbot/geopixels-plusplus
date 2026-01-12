@@ -68,3 +68,18 @@ See [CHANGELOG.md](CHANGELOG.md)
 
 ## License
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE.md) file for details.
+
+## 🙏 Support this project
+If you like this project and want to support its development, consider giving it a star on GitHub! Your support is greatly appreciated. ⭐
+
+You can also support me on Ko-fi:\
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/R5R81S5JO6)
+
+Or using cryptocurrencies:
+
+|[![Solana](https://img.shields.io/badge/Solana-donate-9945FF?logo=solana)](https://explorer.solana.com/address/FUpwyXmyjTGCUbmJfcPze6rijJYBgCHPyVCNKxr6MswG)|[![Bitcoin](https://img.shields.io/badge/Bitcoin-donate-yellow?logo=bitcoin)](https://blockstream.info/address/1ENy88PLJ3g7HKYmm7vSgCSbWBkSVGmVV3)|[![Ethereum](https://img.shields.io/badge/Ethereum-donate-blue?logo=ethereum)](https://etherscan.io/address/0x74F9021A2f8Cd4Aa5e15360eF008aA2725214BcD)|[![TRON](https://img.shields.io/badge/TRON-donate-ff6600?logo=tron)](https://tronscan.org/#/address/TVLy2r4ZsUvazkPB6f8v3qfH8vH9VPPwu8)|
+|:-:|:-:|:-:|:-:|
+|FUpwyXmyjTGCUbmJfcPze6rijJYBgCHPyVCNKxr6MswG|1ENy88PLJ3g7HKYmm7vSgCSbWBkSVGmVV3|0x74F9021A2f8Cd4Aa5e15360eF008aA2725214BcD|TVLy2r4ZsUvazkPB6f8v3qfH8vH9VPPwu8|
+|<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=solana:FUpwyXmyjTGCUbmJfcPze6rijJYBgCHPyVCNKxr6MswG" alt="SOL QR" width="150"/>|<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=bitcoin:1ENy88PLJ3g7HKYmm7vSgCSbWBkSVGmVV3" alt="BTC QR" width="150"/>|<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=ethereum:0x74F9021A2f8Cd4Aa5e15360eF008aA2725214BcD" alt="ETH QR" width="150"/>|<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=tron:TVLy2r4ZsUvazkPB6f8v3qfH8vH9VPPwu8" alt="TRON QR" width="150"/>|
+
+*Thank you for your support!* 🙌

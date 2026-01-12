@@ -1,7 +1,10 @@
 // ==UserScript==
 // @name         GeoPixels++
 // @description  QOL features for https://geopixels.net/ with color palette management
-// @author       thin-kbot, Observable, Phlegethonia, h65e3j
+// @author       Thinkbot
+// @contributor  Observable
+// @contributor  Phlegethonia
+// @contributor  h65e3j
 // @version      0.7.0
 // @match        https://*.geopixels.net/*
 // @namespace    https://github.com/thin-kbot
@@ -9,7 +12,8 @@
 // @updateURL    https://github.com/thin-kbot/geopixels-plusplus/raw/refs/heads/main/geopixels++.user.js
 // @downloadURL  https://github.com/thin-kbot/geopixels-plusplus/raw/refs/heads/main/geopixels++.user.js
 // @icon         https://raw.githubusercontent.com/thin-kbot/geopixels-plusplus/refs/heads/main/img/icon.png
-// @license      GPL-3.0
+// @license      GPL-3.0-or-later; http://www.gnu.org/licenses/gpl-3.0.txt
+// @supportURL   https://ko-fi.com/thinkbot
 // @grant        unsafeWindow
 // ==/UserScript==
 
