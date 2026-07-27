@@ -12,11 +12,15 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - zoom based on pixel size ([issue#3](https://github.com/thin-kbot/geopixels-plusplus/issues/3))
 - Buy colors by bulk or from ghost
 - pipette-like keybind to activate only that color in both palettes
-- fix z-index of censors for right menu buttons (can also fix other geopixels' z-index issues)
 - fix grouping for Ghost colors progress
 - being able to hide "placing-pixels" edges
 - being able to buy colors from the ghost image
 - sort your colors manually
+
+## [Unreleased] (done)
+### Fixed
+- Fix z-index of censors for right menu buttons
+- Fix Geopixels' "Go Back to Painting" and "Zoom in to see the pixels" buttons being above UI modals
 
 ## [0.7.0] - 2025-12-30
 ### Changed

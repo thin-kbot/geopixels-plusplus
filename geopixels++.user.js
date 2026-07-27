@@ -1430,7 +1430,7 @@
 
 	//fix some styles
 	const style = document.createElement("style");
-	style.innerHTML = `input[type="number"]{appearance:auto;}`;
+	style.innerHTML = `input[type="number"]{appearance:auto;}#controls-right{z-index:20;}#resumePaintingControl,#zoom-prompt-container{z-index:10;}`;
 	document.head.appendChild(style);
 
 	//#endregion UI
