@@ -26,25 +26,17 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - Fix Geopixels' "Go Back to Painting" and "Zoom in to see the pixels" buttons being above UI modals
 
 ## [0.7.0] - 2025-12-30
-### Changed
-- Accept directly Strings as well as functions for themes
 ### Added
 - Make censors editable with ctrl + right click
 - Support for checkboxes in the settings
 - "Interact with censors out of censor mode" setting => if checked, you can delete/edit censor rects event when out of censor mode
 - Ghost Image's progress by color *(code modified from `Phlegethonia`)*
+### Changed
+- Accept directly Strings as well as functions for themes
 ### Fixed
 - Dark theme for pfp and banner
 
 ## [0.6.0] - 2025-12-18
-### Changed
-- Small visual improvement to the `SelectMenuButton` component
-- Decluttered the ghost's and profile's UI by making the buttons collapsible
-- Changed the `createModal` function to be more usable for other modals + take actual elements and not an html string
-- Changed keybinds saving format to be more logical
-- small refactor of the censor drawing code
-- Changed `makeBasicButton` to be able to style them easier (and added `COLOR_CLASS` with some presets)
-- Removed `createColorInputModal` and put it's functionality in `promptForColors` as that was the only place it would ever be used
 ### Added
 - 'Add one Censor Rect at Mouse' keybind => simulates the mouse click action when censor mode is enabled
 - Improvements to Censoring :
@@ -55,6 +47,14 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
   - 'UI Theme' (added dark mode, is set as default if the user has dark mode as their default system theme)
   - 'Censor' (color and alpha + json textarea)
 - `saveKeybind` function (save a single keybind by it's key)
+### Changed
+- Small visual improvement to the `SelectMenuButton` component
+- Decluttered the ghost's and profile's UI by making the buttons collapsible
+- Changed the `createModal` function to be more usable for other modals + take actual elements and not an html string
+- Changed keybinds saving format to be more logical
+- small refactor of the censor drawing code
+- Changed `makeBasicButton` to be able to style them easier (and added `COLOR_CLASS` with some presets)
+- Removed `createColorInputModal` and put it's functionality in `promptForColors` as that was the only place it would ever be used
 ### Fixed
 - Fix the Censors not showing on page load until an interaction with the map happens
 - Censors being offset by .5 of a pixel
@@ -64,12 +64,12 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - "add a new censor manually", "clear censors", "export censors", "import censors (replace)" and "import censors (add)" buttons from the Censors SelectMenuButton
 
 ## [0.5.3] - 2025-11-05
-### Changed
-- moved single use functions inside the button call that uses them
-- moved 'Global variables', 'Utils' and 'Color Utils' inside `(function () { ... })()`
 ### Added
 - 'Max charges reached' sound change option
 - 'Toggle Censor Mode' keybind
+### Changed
+- moved single use functions inside the button call that uses them
+- moved 'Global variables', 'Utils' and 'Color Utils' inside `(function () { ... })()`
 ### Fixed
 - Fix changing ghost palette colors since main script's variables change
 
@@ -109,10 +109,10 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - make a new "menuSelectButton" instead of that shit select inside the button that was there before
 
 ## [0.2.2] - 2025-10-07
-### Fixed
-- fix hex parsing (accept any character after the hex)
 ### Changed
 - when changing the user's palette, if the selected color is still in the palette, keep it
+### Fixed
+- fix hex parsing (accept any character after the hex)
 
 ## [0.2.1] - 2025-10-05
 ### Changed
