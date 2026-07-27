@@ -13,6 +13,10 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - Buy colors by bulk or from ghost
 - pipette-like keybind to activate only that color in both palettes
 - fix z-index of censors for right menu buttons (can also fix other geopixels' z-index issues)
+- fix grouping for Ghost colors progress
+- being able to hide "placing-pixels" edges
+- being able to buy colors from the ghost image
+- sort your colors manually
 
 ## [0.7.0] - 2025-12-30
 ### Changed
