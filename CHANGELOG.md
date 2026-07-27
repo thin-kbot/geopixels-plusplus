@@ -18,6 +18,8 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - sort your colors manually
 
 ## [Unreleased] (done)
+### Changed
+- Use `map.easeTo` instead of `map.setCenter` and `map.setZoom` in the `gotoCoords` funtion to move smoothly
 ### Fixed
 - Fix z-index of censors for right menu buttons
 - Fix Geopixels' "Go Back to Painting" and "Zoom in to see the pixels" buttons being above UI modals

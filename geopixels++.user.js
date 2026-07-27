@@ -420,8 +420,11 @@
 		const mercY = y * gSize;
 		const lngLat = turf.toWgs84([mercX, mercY]);
 
-		map.setCenter([lngLat[0], lngLat[1]]);
-		map.setZoom(zoom);
+		map.easeTo({
+			center: [lngLat[0], lngLat[1]],
+			zoom,
+			duration: 300,
+		});
 
 		log(LOG_LEVELS.debug, `Moved to (${x}, ${y})`);
 	}
