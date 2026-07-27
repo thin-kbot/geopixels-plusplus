@@ -135,7 +135,9 @@
 					document.head.appendChild(themeStyle);
 				}
 				themeStyle.innerHTML =
-					typeof THEMES[val]?.style === "function" ? THEMES[val].style() : THEMES[val]?.style ?? "";
+					typeof THEMES[val]?.style === "function"
+						? THEMES[val].style()
+						: (THEMES[val]?.style ?? "");
 			},
 			attributes: {
 				onchange: (e) => {
@@ -199,7 +201,7 @@
 			init: (elm) =>
 				document.addEventListener(
 					"censorRectsChanged",
-					() => (elm.value = JSON.stringify(getCensorRects()))
+					() => (elm.value = JSON.stringify(getCensorRects())),
 				),
 			reset: (elm) => {
 				elm.value = SETTINGS.censorTextarea.value();
@@ -256,7 +258,7 @@
 						},
 					},
 				},
-			])
+			]),
 		),
 	};
 	//#endregion Global variables
@@ -267,7 +269,7 @@
 			`%c[GeoPixels++] %c[${lvl.label}]`,
 			"color: mediumvioletred;",
 			`color:${lvl.color};`,
-			...args
+			...args,
 		);
 	}
 
@@ -523,7 +525,7 @@
 				(obj) =>
 					typeof obj === "object" &&
 					obj !== null &&
-					["gridX", "gridY", "width", "height"].every((key) => Number.isInteger(obj[key]))
+					["gridX", "gridY", "width", "height"].every((key) => Number.isInteger(obj[key])),
 			)
 		);
 	}
@@ -573,7 +575,7 @@
 	}
 
 	censorCanvas.addEventListener("wheel", (e) =>
-		map.getCanvas().dispatchEvent(new WheelEvent(e.type, e))
+		map.getCanvas().dispatchEvent(new WheelEvent(e.type, e)),
 	);
 
 	window.addEventListener("mousedown", (e) => {
@@ -596,7 +598,7 @@
 					point.gridX >= rect.gridX &&
 					point.gridX < rect.gridX + rect.width &&
 					point.gridY >= rect.gridY &&
-					point.gridY < rect.gridY + rect.height
+					point.gridY < rect.gridY + rect.height,
 			);
 			if (rectIdx !== -1) {
 				if (e.ctrlKey) {
@@ -726,7 +728,7 @@
 		const rects = getCensorRects();
 		if (!rects.length) return;
 		rects.forEach((rect) =>
-			drawCensorRect(ctx, rect, gSize, settings.censorColor, settings.censorAlpha)
+			drawCensorRect(ctx, rect, gSize, settings.censorColor, settings.censorAlpha),
 		);
 	}
 
@@ -765,7 +767,7 @@
 		Object.fromEntries(
 			Object.entries(KEY_BINDINGS)
 				.filter(([_, v]) => v.defaultKey)
-				.map(([id, { defaultKey }]) => [id, defaultKey])
+				.map(([id, { defaultKey }]) => [id, defaultKey]),
 		);
 
 	Object.keys(KEY_BINDINGS).forEach((id) => {
@@ -813,8 +815,8 @@
 					Object.keys(KEY_BINDINGS).map((id) => [
 						id,
 						document.querySelector(`[id^='gpp_keybind-${id}']`).value.trim().toLowerCase(),
-					])
-				)
+					]),
+				),
 			);
 		});
 	//#endregion keybind
@@ -831,7 +833,7 @@
 		Object.fromEntries(
 			Object.entries(SETTINGS)
 				.filter(([_, v]) => v.default)
-				.map(([id, { default: d }]) => [id, d])
+				.map(([id, { default: d }]) => [id, d]),
 		);
 
 	Object.keys(SETTINGS).forEach((id) => {
@@ -864,7 +866,7 @@
 		const baseClass =
 			typeof SETTINGS_CLASSES[s.element] === "string"
 				? SETTINGS_CLASSES[s.element]
-				: SETTINGS_CLASSES[s.element]?.[s.attributes.type] ?? "";
+				: (SETTINGS_CLASSES[s.element]?.[s.attributes.type] ?? "");
 
 		const input = Object.assign(document.createElement(s.element), {
 			className: baseClass,
@@ -885,8 +887,8 @@
 					Object.assign(document.createElement("option"), {
 						value,
 						innerText: text,
-					})
-				)
+					}),
+				),
 			);
 		}
 
@@ -950,7 +952,7 @@
 		for (const { x, y } of getAllCoordsBetween(
 			{ x: snapToTile(gridX), y: snapToTile(gridY) },
 			{ x: snapToTile(gridX + width), y: snapToTile(gridY - height) },
-			SYNC_TILE_SIZE
+			SYNC_TILE_SIZE,
 		)) {
 			const tileData = tileImageCache.get(`${x},${y}`);
 			if (tileData?.colorBitmap) mapCtx.drawImage(tileData.colorBitmap, x, y);
@@ -1091,7 +1093,7 @@
 				log(LOG_LEVELS.debug, "Submitted colors:\n", value);
 				if (value) onSubmit(colorsStringToHexArray(value));
 				modal.close();
-			})
+			}),
 		);
 
 		textarea.focus();
@@ -1277,11 +1279,11 @@
 									refreshCensorList();
 								}
 							}),
-							{ className: `p-1 rounded-lg transition cursor-pointer ${COLOR_CLASS.red}` }
-						)
+							{ className: `p-1 rounded-lg transition cursor-pointer ${COLOR_CLASS.red}` },
+						),
 					);
 					return row;
-				})
+				}),
 			);
 		}
 		refreshCensorList();
@@ -1311,24 +1313,24 @@
 	addGPPButtonToggle(
 		document.querySelector("#ghostColorPaletteContainer>div"),
 		makeBasicButton("Enable Only Owned Ghost Colors", () =>
-			setEnabledGhostPalette(getAvailableGhostColors())
+			setEnabledGhostPalette(getAvailableGhostColors()),
 		),
 		makeBasicButton("Get Ghost Colors", () =>
 			copyToClipboard(
 				getGhostImageHexColors()
 					.map((hex) => toOutputHex(hex))
-					.join("\n")
-			)
+					.join("\n"),
+			),
 		),
 		makeBasicButton("Get Enabled Ghost Colors", () =>
-			copyToClipboard(getEnabledGhostPalette().toOutputString())
+			copyToClipboard(getEnabledGhostPalette().toOutputString()),
 		),
 		makeBasicButton("Set Enabled Ghost Colors", () =>
 			promptForColors(
 				(t) => setEnabledGhostPalette(t.filter(isInGhostPalette)),
-				"Set Enabled Ghost Colors"
-			)
-		)
+				"Set Enabled Ghost Colors",
+			),
+		),
 	);
 
 	// Add buttons to profile
@@ -1345,15 +1347,15 @@
 				copyToClipboard(
 					getUserPalette()
 						.filter((c, idx) => activeColors.includes(idx))
-						.toOutputString()
-				)
+						.toOutputString(),
+				),
 			),
 			makeBasicButton("Set Enabled Colors", () =>
 				promptForColors(
 					(t) => setEnabledUserPalette(t.filter(isInUserPalette)),
-					"Set Enabled User Colors"
-				)
-			)
+					"Set Enabled User Colors",
+				),
+			),
 		);
 	}
 
@@ -1373,7 +1375,7 @@
 		"✚₊",
 		"GeoPixels++",
 		"geopixels-plusplus",
-		document.getElementById("controls-left")
+		document.getElementById("controls-left"),
 	).append(
 		makeMenuButton("🎯", "Go to Coordinates", () => {
 			const input = prompt("Enter coordinates (gridX,gridY) or GeoPixels URL:");
@@ -1383,7 +1385,7 @@
 			promptForColors((s) => {
 				setEnabledUserPalette(s.filter(isInUserPalette));
 				setEnabledGhostPalette(s.filter(isInGhostPalette));
-			})
+			}),
 		),
 		makeSelectMenuButton(
 			"🎵",
@@ -1397,7 +1399,7 @@
 					},
 				};
 			}),
-			"Choose a sound to change"
+			"Choose a sound to change",
 		),
 		makeSelectMenuButton("🚫", "Censor", [
 			{
@@ -1409,7 +1411,7 @@
 				onClick: createCensorsConfigModal,
 			},
 		]),
-		makeMenuButton("⚙️", "Settings", createSettingsModal)
+		makeMenuButton("⚙️", "Settings", createSettingsModal),
 	);
 
 	//Add to the keybind Panel
@@ -1424,7 +1426,7 @@
 								<label for="gpp_keybind-${id}" class="text-gray-600">${KEY_BINDINGS[id].text}</label>
 								<input id="gpp_keybind-${id}" type="text" maxlength="1" class="keybind-input">
 							</div>
-						`
+						`,
 					)
 					.join("")}
 			</div>
