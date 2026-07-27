@@ -410,7 +410,31 @@
 	//#endregion Ghost Image Palette Functions
 
 	//#region Navigation
-	function gotoCoords({ x, y }, zoom = 16) {
+	function getPixelScreenSize() {
+		//inspired from "updatePixelScreenSize" from the website's js
+		if (!map || !gridSize) return;
+
+		const center = map.getCenter();
+		const centerMerc = turf.toMercator([center.lng, center.lat]);
+
+		const p1Screen = map.project(turf.toWgs84([centerMerc[0] - gridSize / 2, centerMerc[1]]));
+		const p2Screen = map.project(turf.toWgs84([centerMerc[0] + gridSize / 2, centerMerc[1]]));
+
+		return Math.abs(p2Screen.x - p1Screen.x);
+	}
+
+	const getPixelPerfectZoom = (scale = 1) =>
+		map.getZoom() + Math.log2(scale / getPixelScreenSize() / window.devicePixelRatio);
+
+	function gotoCoords(coords, zoom) {
+		map.easeTo({
+			center: coords,
+			zoom,
+			duration: 300,
+		});
+	}
+
+	function gotoGridCoords({ x, y }, zoom = 16) {
 		const gSize = usw.gridSize || gridSize || 25;
 
 		if (isNaN(x) || isNaN(y)) {
@@ -422,13 +446,7 @@
 		const mercY = y * gSize;
 		const lngLat = turf.toWgs84([mercX, mercY]);
 
-		map.easeTo({
-			center: [lngLat[0], lngLat[1]],
-			zoom,
-			duration: 300,
-		});
-
-		log(LOG_LEVELS.debug, `Moved to (${x}, ${y})`);
+		gotoCoords(lngLat, zoom);
 	}
 
 	function gotoFromInput(input = "") {
@@ -465,7 +483,7 @@
 			return;
 		}
 
-		gotoCoords({ x: +parts[0], y: +parts[1] });
+		gotoGridCoords({ x: +parts[0], y: +parts[1] });
 	}
 	//#endregion Navigation
 
@@ -1412,6 +1430,20 @@
 			},
 		]),
 		makeMenuButton("⚙️", "Settings", createSettingsModal),
+	);
+
+	//Add to the right control buttons
+	document.getElementById("zoomOut").after(
+		makeMenuButton("🔳", "set zoom to pixel perfect\n(shift click to change scale)", (e) => {
+			const scale = e.shiftKey ? prompt("pixel scale (defaults to 1)", 1) : 1;
+
+			if (isNaN(scale)) {
+				log(LOG_LEVELS.error, "Invalid scale");
+				return;
+			}
+
+			if (scale != null) gotoCoords(map.getCenter(), getPixelPerfectZoom(scale));
+		}),
 	);
 
 	//Add to the keybind Panel
