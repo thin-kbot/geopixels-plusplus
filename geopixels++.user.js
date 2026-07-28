@@ -117,6 +117,7 @@
 		appearance: "Appearance",
 		censor: "Censor",
 		keybinds: "Keybindings",
+		ghostExport: "Ghost Image export",
 	};
 
 	const SETTINGS = {
@@ -259,6 +260,38 @@
 				},
 			]),
 		),
+		doGhostExportCoords: {
+			name: "Include topleft coordinates",
+			element: "input",
+			category: SETTINGS_CATEGORIES.ghostExport,
+			default: true,
+			attributes: {
+				type: "checkbox",
+				onchange: (e) => saveSetting("doGhostExportCoords", e.target.checked),
+			},
+		},
+		doGhostExportEnabledColors: {
+			name: "Include enabled ghost colors",
+			element: "input",
+			category: SETTINGS_CATEGORIES.ghostExport,
+			default: false,
+			attributes: {
+				type: "checkbox",
+				onchange: (e) => saveSetting("doGhostExportEnabledColors", e.target.checked),
+			},
+		},
+		ghostExportFileName: {
+			name: "File name",
+			category: SETTINGS_CATEGORIES.ghostExport,
+			element: "input",
+			default: "ghost",
+			attributes: {
+				onchange: (e) => {
+					saveSetting("ghostExportFileName", e.target.value);
+					validateInput(e.target);
+				},
+			},
+		},
 	};
 	//#endregion Global variables
 
@@ -309,10 +342,10 @@
 
 	const snapToTile = (value) => Math.floor(value / SYNC_TILE_SIZE) * SYNC_TILE_SIZE;
 
-	function setGhostImageTopLeft(pos) {
+	function setGhostImageTopLeft(pos, logLVL = LOG_LEVELS.debug) {
 		ghostImageTopLeft = pos;
 		localStorage.setItem("ghostImageCoords", JSON.stringify(pos));
-		log(LOG_LEVELS.debug, "Ghost image position set.");
+		log(logLVL, `Ghost image position set to {x:${pos.gridX},y:${pos.gridY}}.`);
 		drawGhostImageOnCanvas();
 	}
 	//#endregion Utils
@@ -877,7 +910,7 @@
 		if (SETTINGS[id] && SETTINGS[id].apply) SETTINGS[id].apply(val);
 
 	const SETTINGS_CLASSES = {
-		select: "rounded-md border-2 border-gray-200 sm:text-sm p-2",
+		default: "rounded-md border-2 border-gray-200 sm:text-sm p-2",
 		textarea:
 			"w-full h-32 rounded-md border-2 border-gray-200 p-2 font-mono resize-vertical outline-none transition",
 		button:
@@ -893,7 +926,7 @@
 		const baseClass =
 			typeof SETTINGS_CLASSES[s.element] === "string"
 				? SETTINGS_CLASSES[s.element]
-				: (SETTINGS_CLASSES[s.element]?.[s.attributes.type] ?? "");
+				: (SETTINGS_CLASSES[s.element]?.[s.attributes.type] ?? SETTINGS_CLASSES.default);
 
 		const input = Object.assign(document.createElement(s.element), {
 			className: baseClass,
@@ -1051,18 +1084,24 @@
 
 		const canvas = new OffscreenCanvas(ghostImageOriginalData.width, ghostImageOriginalData.height);
 		canvas.getContext("2d").putImageData(ghostImageOriginalData, 0, 0);
-		const blob = await canvas.convertToBlob({ type: "image/png" });
+		let blob = await canvas.convertToBlob({ type: "image/png" });
 
-		const chunks = extract(new Uint8Array(await blob.arrayBuffer()));
+		const json = {};
+		if (settings.doGhostExportCoords && ghostImageTopLeft)
+			json.ghostImageTopLeft = ghostImageTopLeft;
+		if (settings.doGhostExportEnabledColors) json.enabledGhostPalette = getEnabledGhostPalette();
 
-		const json = {
-			ghostImageTopLeft,
-			enabledGhostPalette: getEnabledGhostPalette(),
-		};
-		chunks.splice(-1, 0, text.encode(STORAGE_KEYS.pngData, JSON.stringify(json)));
+		if (Object.keys(json).length) {
+			const chunks = extract(new Uint8Array(await blob.arrayBuffer()));
+			chunks.splice(-1, 0, text.encode(STORAGE_KEYS.pngData, JSON.stringify(json)));
+			blob = encode(chunks);
+		}
 
-		const url = URL.createObjectURL(new Blob([encode(chunks)], { type: "image/png" }));
-		Object.assign(document.createElement("a"), { href: url, download: "ghost.png" }).click();
+		const url = URL.createObjectURL(new Blob([blob], { type: "image/png" }));
+		Object.assign(document.createElement("a"), {
+			href: url,
+			download: `${settings.ghostExportFileName}.png`,
+		}).click();
 		URL.revokeObjectURL(url);
 	}
 
@@ -1074,16 +1113,17 @@
 
 		const textChunks = extract(bytes)
 			.filter((c) => c.name === "tEXt")
-			.map((c) => text.decode(c.data));
+			.map((c) => text.decode(c.data))
+			.filter(({ keyword }) => keyword == STORAGE_KEYS.pngData);
 		log(LOG_LEVELS.debug, "textChunks:", textChunks);
-		const pngData = JSON.parse(
-			textChunks[0].filter(({ keyword }) => keyword == STORAGE_KEYS.pngData).text,
-		);
+
+		if (!textChunks.length) return;
+
+		const pngData = JSON.parse(textChunks[0].text);
 		log(LOG_LEVELS.debug, "pngData:", pngData);
 
-		setGhostImageTopLeft(pngData.ghostImageTopLeft);
-		setEnabledGhostPalette(pngData.enabledGhostPalette);
-		log(LOG_LEVELS.info, "ghost Image data extracted from png");
+		if (pngData.ghostImageTopLeft) setGhostImageTopLeft(pngData.ghostImageTopLeft, LOG_LEVELS.info);
+		if (pngData.enabledGhostPalette) setEnabledGhostPalette(pngData.enabledGhostPalette);
 	}
 
 	document.getElementById("ghostImageInput").addEventListener("change", (e) => {
