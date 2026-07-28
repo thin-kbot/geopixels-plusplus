@@ -24,6 +24,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 ### Fixed
 - Fix z-index of censors for right menu buttons
 - Fix Geopixels' "Go Back to Painting" and "Zoom in to see the pixels" buttons being above UI modals
+- Fix `getEnabledGhostPalette` returning a string when no `ghostActivePaletteColors`
 
 ## [0.7.0] - 2025-12-30
 ### Added

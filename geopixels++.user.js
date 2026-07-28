@@ -23,8 +23,8 @@
 
 	const LOG_LEVELS = {
 		error: { label: "ERR", color: "red" },
-		info: { label: "INF", color: "lime" },
 		warn: { label: "WRN", color: "yellow" },
+		info: { label: "INF", color: "lime" },
 		debug: { label: "DBG", color: "cyan" },
 	};
 
@@ -388,7 +388,7 @@
 			return Array.from(ghostActivePaletteColors).map((rgba) => rgbaToHex(...rgba.match(/\d+/g)));
 
 		log(LOG_LEVELS.info, "No ghost colors enabled");
-		return "";
+		return [];
 	}
 
 	function isInGhostPalette(hex) {
