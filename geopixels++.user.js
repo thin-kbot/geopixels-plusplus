@@ -15,6 +15,7 @@
 // @license      GPL-3.0-or-later; http://www.gnu.org/licenses/gpl-3.0.txt
 // @supportURL   https://ko-fi.com/thinkbot
 // @grant        unsafeWindow
+// @require      https://raw.githubusercontent.com/thin-kbot/geopixels-plusplus/refs/heads/main/png_chunk_bundle.js
 // ==/UserScript==
 
 (function () {
@@ -32,6 +33,7 @@
 		censor: "geo++_censorRects",
 		keybinds: "geo++_keybinds",
 		settings: "geo++_settings",
+		pngData: "geopixels_geo++_json",
 	};
 
 	const SOUNDS = [
@@ -69,10 +71,7 @@
 			defaultKey: "e",
 			keydown: () => {
 				const pos = screenPointToGrid(document.getElementById("pixel-canvas"), mouseX, mouseY);
-				ghostImageTopLeft = pos;
-				localStorage.setItem("ghostImageCoords", JSON.stringify(pos));
-				log(LOG_LEVELS.debug, "Ghost image position set.");
-				drawGhostImageOnCanvas();
+				setGhostImageTopLeft(pos);
 			},
 		},
 		toggleCensorMode: {
@@ -309,6 +308,13 @@
 	}
 
 	const snapToTile = (value) => Math.floor(value / SYNC_TILE_SIZE) * SYNC_TILE_SIZE;
+
+	function setGhostImageTopLeft(pos) {
+		ghostImageTopLeft = pos;
+		localStorage.setItem("ghostImageCoords", JSON.stringify(pos));
+		log(LOG_LEVELS.debug, "Ghost image position set.");
+		drawGhostImageOnCanvas();
+	}
 	//#endregion Utils
 
 	//#region Color Utils
@@ -392,6 +398,7 @@
 	}
 
 	function isInGhostPalette(hex) {
+		hex = toFullHex(hex.slice(0, 7));
 		const is = getGhostImageHexColors().includes(hex);
 		if (!is) log(LOG_LEVELS.warn, "Color not in ghost palette:", hex);
 		return is;
@@ -1031,6 +1038,64 @@
 	};
 	//#endregion Ghost colors progress
 
+	//#region Ghost Image data
+	const extract = require("png-chunks-extract");
+	const encode = require("png-chunks-encode");
+	const text = require("png-chunk-text");
+
+	async function exportGhostImage() {
+		if (!ghostImageOriginalData) {
+			log(LOG_LEVELS.error, "no ghost data");
+			return;
+		}
+
+		const canvas = new OffscreenCanvas(ghostImageOriginalData.width, ghostImageOriginalData.height);
+		canvas.getContext("2d").putImageData(ghostImageOriginalData, 0, 0);
+		const blob = await canvas.convertToBlob({ type: "image/png" });
+
+		const chunks = extract(new Uint8Array(await blob.arrayBuffer()));
+
+		const json = {
+			ghostImageTopLeft,
+			enabledGhostPalette: getEnabledGhostPalette(),
+		};
+		chunks.splice(-1, 0, text.encode(STORAGE_KEYS.pngData, JSON.stringify(json)));
+
+		const url = URL.createObjectURL(new Blob([encode(chunks)], { type: "image/png" }));
+		Object.assign(document.createElement("a"), { href: url, download: "ghost.png" }).click();
+		URL.revokeObjectURL(url);
+	}
+
+	async function importGhostImage(e) {
+		const file = e.target.files[0];
+		if (!file || file.type != "image/png") return;
+
+		const bytes = new Uint8Array(await file.arrayBuffer());
+
+		const textChunks = extract(bytes)
+			.filter((c) => c.name === "tEXt")
+			.map((c) => text.decode(c.data));
+		log(LOG_LEVELS.debug, "textChunks:", textChunks);
+		const pngData = JSON.parse(
+			textChunks[0].filter(({ keyword }) => keyword == STORAGE_KEYS.pngData).text,
+		);
+		log(LOG_LEVELS.debug, "pngData:", pngData);
+
+		setGhostImageTopLeft(pngData.ghostImageTopLeft);
+		setEnabledGhostPalette(pngData.enabledGhostPalette);
+		log(LOG_LEVELS.info, "ghost Image data extracted from png");
+	}
+
+	document.getElementById("ghostImageInput").addEventListener("change", (e) => {
+		importGhostImage(e);
+	});
+	const loadGhostImageFromFile_old = usw.loadGhostImageFromFile;
+	usw.loadGhostImageFromFile = function (e) {
+		loadGhostImageFromFile_old(e);
+		importGhostImage(e);
+	};
+	//#endregion Ghost Image data
+
 	//#region UI Helpers
 	function copyToClipboard(text) {
 		log(LOG_LEVELS.info, "Copied text to clipboard:\n", text);
@@ -1460,6 +1525,14 @@
 			</div>
 	`;
 	document.querySelector("#keybindsPanel>div.grid>div:nth-child(2)").appendChild(gpp_keybind_div);
+
+	//Add to Ghost Image modal
+	document.getElementById("initiatePlaceGhostBtn").before(
+		makeBasicButton("Export", () => {
+			exportGhostImage();
+		}),
+	);
+	document.querySelector("[for='ghostImageInput']").innerText = "Import";
 
 	//fix some styles
 	const style = document.createElement("style");
