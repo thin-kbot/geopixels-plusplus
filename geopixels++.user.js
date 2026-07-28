@@ -357,6 +357,7 @@
 	}
 
 	function setEnabledUserPalette(hexArray) {
+		hexArray = hexArray.filter(isInUserPalette);
 		const colors = getUserPalette();
 		activeColors = hexArray.map((h) => colors.indexOf(h)).filter((i) => i !== -1);
 		activeColors.push(Colors.length - 1);
@@ -400,6 +401,7 @@
 		if (!getGhostImageHexColors() || getGhostImageHexColors().length === 0)
 			return log(LOG_LEVELS.warn, "No ghost image loaded");
 
+		hexArray = hexArray.filter(isInGhostPalette);
 		ghostActivePaletteColors = new Set(hexArray.map((h) => rgbToRgbaString(hexToRgba(h))));
 		populateColorPaletteUI();
 		regenerateGhostCanvas();
@@ -1344,10 +1346,7 @@
 			copyToClipboard(getEnabledGhostPalette().toOutputString()),
 		),
 		makeBasicButton("Set Enabled Ghost Colors", () =>
-			promptForColors(
-				(t) => setEnabledGhostPalette(t.filter(isInGhostPalette)),
-				"Set Enabled Ghost Colors",
-			),
+			promptForColors((t) => setEnabledGhostPalette(t), "Set Enabled Ghost Colors"),
 		),
 	);
 
@@ -1369,10 +1368,7 @@
 				),
 			),
 			makeBasicButton("Set Enabled Colors", () =>
-				promptForColors(
-					(t) => setEnabledUserPalette(t.filter(isInUserPalette)),
-					"Set Enabled User Colors",
-				),
+				promptForColors((t) => setEnabledUserPalette(t), "Set Enabled User Colors"),
 			),
 		);
 	}
@@ -1401,8 +1397,8 @@
 		}),
 		makeMenuButton("🧪", "Set Both Palettes", () =>
 			promptForColors((s) => {
-				setEnabledUserPalette(s.filter(isInUserPalette));
-				setEnabledGhostPalette(s.filter(isInGhostPalette));
+				setEnabledUserPalette(s);
+				setEnabledGhostPalette(s);
 			}),
 		),
 		makeSelectMenuButton(
