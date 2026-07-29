@@ -581,7 +581,7 @@
 			.then((decodedAudio) => {
 				eval(`${s.variable} = decodedAudio`);
 			})
-			.catch((err) => (LOG_LEVELS.error, "Error loading audio:", err));
+			.catch((err) => log(LOG_LEVELS.error, "Error loading audio:", err));
 	}
 
 	function saveBlobSound(s, blob) {
