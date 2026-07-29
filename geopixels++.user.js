@@ -120,6 +120,7 @@
 		censor: "Censor",
 		keybinds: "Keybindings",
 		ghostExport: "Ghost Image export",
+		bulkColorUnlock: "Bulk Color Unlock",
 	};
 
 	const SETTINGS = {
@@ -294,6 +295,16 @@
 				},
 			},
 		},
+		doBulkColorUnlockGhostCountPlaced: {
+			name: 'In the "Ghost Image Settings" when clicking "Add all" subtract the pixels placed from the total pixels in the ghost',
+			element: "input",
+			category: SETTINGS_CATEGORIES.bulkColorUnlock,
+			default: true,
+			attributes: {
+				type: "checkbox",
+				onchange: (e) => saveSetting("doBulkColorUnlockGhostCountPlaced", e.target.checked),
+			},
+		},
 	};
 	//#endregion Global variables
 
@@ -322,6 +333,16 @@
 			if (condition()) callback();
 			else if (tries++ < maxTries) setTimeout(check, interval);
 		})();
+	}
+
+	function debounce(func, delay = 100) {
+		let timeout;
+		return function (...args) {
+			clearTimeout(timeout);
+			timeout = setTimeout(() => {
+				func.apply(this, args);
+			}, delay);
+		};
 	}
 
 	function screenPointToGrid(canvas, mX, mY) {
@@ -464,36 +485,14 @@
 		log(LOG_LEVELS.info, "Ghost palette updated with", hexArray.length, "enabled colors");
 	}
 
-	let GIM_moved = false;
 	document.getElementById("ghostColorPalette").addEventListener("contextmenu", (e) => {
 		if (e.target.tagName != "BUTTON") return;
 		e.preventDefault();
 
 		const color = rgbaToHex(...e.target.dataset.colorRgba.match(/\d+/g));
 
-		addBulkColorUnlock(color);
-
-		toggleProfile(true);
-
-		if (!GIM_moved) {
-			const ghostImageModal = document.getElementById("ghostImageModal");
-			ghostImageModal.style.transition = "left .2s ease-in-out";
-			ghostImageModal.style.left = `${Math.max(0, window.innerWidth - ghostImageModal.offsetWidth)}px`;
-			setTimeout(() => {
-				ghostImageModal.style.transition = null;
-			}, 200);
-			GIM_moved = true;
-		}
-		document
-			.getElementById("profilePanel")
-			.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-		bulkColorUnlockList.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+		addBulkColorUnlock(color, true);
 	});
-	const toggleGhostModal_old = usw.toggleGhostModal;
-	usw.toggleGhostModal = function (...args) {
-		toggleGhostModal_old(...args);
-		GIM_moved = false;
-	};
 	//#endregion Ghost Image Palette Functions
 
 	//#region Navigation
@@ -1028,8 +1027,9 @@
 	//#endregion settings
 
 	//#region Ghost colors progress
-	function updateGhostPaletteProgress() {
-		if (!ghostImage || !ghostImageOriginalData || !ghostImageTopLeft) return;
+	function getGhostPaletteProgress() {
+		if (!ghostImage || !ghostImageOriginalData || !ghostImageTopLeft || !ghostPaletteColors.length)
+			return [];
 
 		const { gridX, gridY } = ghostImageTopLeft;
 		const { width, height } = ghostImage;
@@ -1061,14 +1061,19 @@
 			if (hex == mapHex) matchingColorMap.set(hex, (matchingColorMap.get(hex) ?? 0) + 1);
 		}
 
-		const container = document.getElementById("ghostColorPalette");
+		return ghostPaletteColors.map((c) => ({
+			...c,
+			completed: matchingColorMap.get(toFullHex(c.hex)) ?? 0,
+		}));
+	}
 
-		for (const { rgba, hex, totalCount } of ghostPaletteColors) {
+	function updateGhostPaletteProgress() {
+		const container = document.getElementById("ghostColorPalette");
+		for (const { rgba, hex, totalCount, completed } of getGhostPaletteProgress()) {
 			const swatch = container.querySelector(`[data-color-rgba="${rgba}"]`);
 			if (!swatch) continue;
 			swatch.style.position = "relative";
 
-			const completed = matchingColorMap.get(toFullHex(hex)) ?? 0;
 			const progress = completed / totalCount;
 			const percent = Math.floor(progress * 1000) / 10;
 
@@ -1199,7 +1204,31 @@
 		}
 	}
 
-	function addBulkColorUnlock(hex = "") {
+	let GIM_moved = false;
+	const setUnlockColorBulkUI = debounce(() => {
+		toggleProfile(true);
+
+		if (!GIM_moved) {
+			const ghostImageModal = document.getElementById("ghostImageModal");
+			ghostImageModal.style.transition = "left .2s ease-in-out";
+			ghostImageModal.style.left = `${Math.max(0, window.innerWidth - ghostImageModal.offsetWidth)}px`;
+			setTimeout(() => (ghostImageModal.style.transition = null), 200);
+			GIM_moved = true;
+		}
+		document
+			.getElementById("profilePanel")
+			.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+		bulkColorUnlockList.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+	});
+	const toggleGhostModal_old = usw.toggleGhostModal;
+	usw.toggleGhostModal = function (...args) {
+		toggleGhostModal_old(...args);
+		GIM_moved = false;
+	};
+
+	function addBulkColorUnlock(hex = "", external = false) {
+		if (external) setUnlockColorBulkUI();
+
 		hex = toFullHex(toOutputHex(hex));
 		if (isInUserPalette(hex, false)) return;
 		if (getBulkColorUnlockList().includes(hex)) {
@@ -1733,7 +1762,26 @@
 	);
 	document.querySelector("[for='ghostImageInput']").innerText = "Import";
 
-	document.getElementById("ghostColorPalette").after('🖱️RMB to add to "Bulk Color Unlock"');
+	document.getElementById("ghostColorPaletteContainer").append(
+		'🖱️RMB to add to "Bulk Color Unlock" or',
+		Object.assign(
+			makeButton("Add all ...", () => {
+				const input = prompt(
+					"Minimum (inclusive) amount of pixels the color has to have in the ghost for it to be added\n(0 to add all)",
+					500,
+				);
+				if (!input) return;
+
+				for (const { hex, totalCount, completed } of getGhostPaletteProgress())
+					if (totalCount - (settings.doBulkColorUnlockGhostCountPlaced ? completed : 0) >= input)
+						addBulkColorUnlock(hex, true);
+			}),
+			{
+				className: `ml-2 px-1 rounded transition cursor-pointer ${COLOR_CLASS.blue}`,
+				title: "Add all colors that are above a given number in the ghost",
+			},
+		),
+	);
 
 	//Add Bulk Color
 	const extraColorInput = document.getElementById("ExtraColorInput");
