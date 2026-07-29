@@ -16,6 +16,7 @@
 // @supportURL      https://github.com/thin-kbot/geopixels-plusplus/issues
 // @contributionURL https://ko-fi.com/thinkbot
 // @grant           unsafeWindow
+// @require         https://raw.githubusercontent.com/thin-kbot/geopixels-plusplus/refs/heads/main/png_chunk_bundle.js
 // ==/UserScript==
 
 (function () {
@@ -353,6 +354,7 @@
 	//#region Color Utils
 	const cToHex = (c) => (+c).toString(16).padStart(2, "0");
 	const hexToC = (h) => parseInt(h, 16);
+	const rgbToGeopixelsId = ({ r, g, b }) => (r << 16) + (g << 8) + b;
 	function toFullHex(hex) {
 		hex = hex.toLowerCase();
 		if (hex.length === 4 || hex.length === 5)
@@ -379,7 +381,7 @@
 	function colorsStringToHexArray(colorsString) {
 		return colorsString
 			.trim()
-			.split("\n")
+			.split(/[^a-zA-Z0-9#]/)
 			.filter(Boolean)
 			.map((c) => parseColor(c))
 			.filter(Boolean);
@@ -389,9 +391,10 @@
 	//#region User Palette Functions
 	const getUserPalette = () => Colors.slice(0, -1).map(toFullHex);
 
-	function isInUserPalette(hex) {
+	function isInUserPalette(hex, wantIn = true) {
 		const is = getUserPalette().includes(hex);
-		if (!is) log(LOG_LEVELS.warn, "Color not in user palette:", toOutputHex(hex));
+		if ((!is && wantIn) || (is && !wantIn))
+			log(LOG_LEVELS.warn, `${toOutputHex(hex)} ${wantIn ? "not" : "already"} in user palette`);
 		return is;
 	}
 
@@ -449,6 +452,37 @@
 
 		log(LOG_LEVELS.info, "Ghost palette updated with", hexArray.length, "enabled colors");
 	}
+
+	let GIM_moved = false;
+	document.getElementById("ghostColorPalette").addEventListener("contextmenu", (e) => {
+		if (e.target.tagName != "BUTTON") return;
+		e.preventDefault();
+
+		const color = rgbaToHex(...e.target.dataset.colorRgba.match(/\d+/g));
+
+		addBulkColorUnlock(color);
+
+		toggleProfile(true);
+
+		if (!GIM_moved) {
+			const ghostImageModal = document.getElementById("ghostImageModal");
+			ghostImageModal.style.transition = "left .2s ease-in-out";
+			ghostImageModal.style.left = `${Math.max(0, window.innerWidth - ghostImageModal.offsetWidth)}px`;
+			setTimeout(() => {
+				ghostImageModal.style.transition = null;
+			}, 200);
+			GIM_moved = true;
+		}
+		document
+			.getElementById("profilePanel")
+			.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+		bulkColorUnlockList.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+	});
+	const toggleGhostModal_old = usw.toggleGhostModal;
+	usw.toggleGhostModal = function (...args) {
+		toggleGhostModal_old(...args);
+		GIM_moved = false;
+	};
 	//#endregion Ghost Image Palette Functions
 
 	//#region Navigation
@@ -1049,7 +1083,7 @@
 			if (!icon) {
 				icon = document.createElement("span");
 				icon.className =
-					"absolute h-3 w-3 rounded-full border-2 border-white text-white font-bold flex justify-center items-center";
+					"absolute h-3 w-3 rounded-full border-2 border-white text-white font-bold flex justify-center items-center pointer-events-none";
 				Object.assign(icon.style, { top: "-3px", right: "-3px", fontSize: "0.6rem" });
 				swatch.appendChild(icon);
 			}
@@ -1137,6 +1171,130 @@
 	};
 	//#endregion Ghost Image data
 
+	//#region Bulk Color Unlock
+	function refreshUnlockColorBulk(show = null) {
+		const nbChild = bulkColorUnlockList.children.length;
+		if (show === null) show = nbChild > 1;
+
+		extraColorTxt.forEach((elm) => (elm.innerHTML = elm.dataset[`${show}Txt`]));
+		bulkColorAddBtn.hidden = nbChild < 1;
+		extraColorCard.children[3].hidden = show; // Line
+		bulkColorUnlockList.hidden = bulkColorBuyBtn.hidden = !show;
+
+		if (nbChild == 1) {
+			extraColorInput.value = toOutputHex(
+				bulkColorUnlockList.querySelector("input[type='color']")?.value ?? "",
+			);
+			extraColorInput.dispatchEvent(new Event("input"));
+		}
+	}
+
+	function autoAddUnlockColorBulk(e) {
+		if (/^#?([\da-f]{6}(?:[\da-f]{2})?|[\da-f]{3,4})[^a-zA-Z0-9#]$/i.test(e.target.value)) {
+			e.target.dispatchEvent(new Event("change"));
+			addBulkColorUnlock();
+		}
+	}
+
+	function addBulkColorUnlock(hex = "") {
+		hex = toFullHex(toOutputHex(hex));
+		if (isInUserPalette(hex, false)) return;
+		if (getBulkColorUnlockList().includes(hex)) {
+			log(LOG_LEVELS.warn, `${hex} already in the list`);
+			return;
+		}
+
+		const line = document.createElement("div");
+		line.classList = "inline-block relative";
+
+		const inputColor = document.createElement("input");
+		inputColor.classList = SETTINGS_CLASSES.input.color + " w-8 h-8";
+		inputColor.style.padding = "2px";
+		inputColor.type = "color";
+		if (hex) inputColor.value = hex;
+
+		const inputText = document.createElement("input");
+		inputText.classList = DEFAULT_SETTINGS_CLASS.replace("p-2", "");
+		inputText.classList += " px-2 font-mono h-8";
+		Object.assign(inputText.style, { fieldSizing: "content", maxWidth: "100px", minWidth: "50px" });
+		inputText.maxLength = 9;
+
+		const rmBtn = document.createElement("button");
+		rmBtn.innerText = "✗";
+		rmBtn.className =
+			"absolute h-3 w-3 rounded-full text-red-500 font-bold flex justify-center items-center cursor-pointer";
+		Object.assign(rmBtn.style, { top: "-3px", right: "-3px" });
+
+		function toggleInput(textMode) {
+			inputText.hidden = !(inputColor.hidden = textMode);
+			if (textMode) {
+				inputText.value = inputColor.value;
+				inputText.focus();
+				inputText.setSelectionRange(1, inputText.value.length);
+			}
+		}
+
+		inputColor.addEventListener("contextmenu", (e) => {
+			e.preventDefault();
+			toggleInput(true);
+		});
+
+		function inputChange() {
+			if (inputText.hidden) return;
+			const hex = parseColor(inputText.value);
+			if (!inputText.value || getBulkColorUnlockList().includes(hex) || isInUserPalette(hex, false))
+				removeBulkColorUnlock(line);
+			if (hex) {
+				inputColor.value = hex;
+				toggleInput(false);
+			} else validateInput(inputText, "red");
+		}
+		inputText.addEventListener("blur", inputChange);
+		inputText.addEventListener("keyup", (e) => {
+			if (e.key === "Enter") inputChange();
+		});
+		inputText.addEventListener("input", autoAddUnlockColorBulk);
+
+		rmBtn.addEventListener("click", () => removeBulkColorUnlock(line));
+
+		line.append(inputColor, inputText, rmBtn);
+		bulkColorUnlockList.append(line);
+
+		refreshUnlockColorBulk();
+		toggleInput(!hex);
+	}
+
+	function removeBulkColorUnlock(line) {
+		line.remove();
+		refreshUnlockColorBulk();
+	}
+
+	function resetBulkColorUnlock() {
+		bulkColorUnlockList.innerHTML = "";
+		refreshUnlockColorBulk();
+	}
+
+	function getBulkColorUnlockList() {
+		return [...bulkColorUnlockList.children]
+			.map((elm) => {
+				const v = elm.querySelector("input[type='color']:not([hidden])")?.value;
+				if (v) return toFullHex(v);
+			})
+			.filter(Boolean);
+	}
+
+	const toggleProfile_old = usw.toggleProfile;
+	usw.toggleProfile = function (...args) {
+		toggleProfile_old(...args);
+		refreshUnlockColorBulk();
+	};
+	const MakePurchase_old = usw.MakePurchase;
+	usw.MakePurchase = function (...args) {
+		MakePurchase_old(...args);
+		if (args[0] == "ExtraColor") resetBulkColorUnlock();
+	};
+	//#endregion Bulk Color Unlock
+
 	//#region UI Helpers
 	function copyToClipboard(text) {
 		log(LOG_LEVELS.info, "Copied text to clipboard:\n", text);
@@ -1206,9 +1364,8 @@
 	function promptForColors(onSubmit, title = "Enter colors") {
 		const textarea = document.createElement("textarea");
 		textarea.placeholder =
-			"Enter colors (one per line)\nFormat: '#?RRGGBB(.+)?'\nExample:\nFAECCE\n#FAECCE55\n#faecce\nFAECCE55 randomTEXTatgfdljj";
-		textarea.className =
-			"w-full p-3 border-2 border-gray-200 rounded-lg font-mono text-sm resize-vertical box-border";
+			"Enter one or a list of any valid hex color format.\nList must be separated by anything else than a hashtag or alphanumeric characters\nExample:\n#eee,#e5f6a201 #8F4AC1\nEF55, #e5f, e5f";
+		textarea.className = SETTINGS_CLASSES.textarea;
 		textarea.style.height = "200px";
 
 		const modal = createModal(
@@ -1574,6 +1731,92 @@
 		}),
 	);
 	document.querySelector("[for='ghostImageInput']").innerText = "Import";
+
+	document.getElementById("ghostColorPalette").after('🖱️RMB to add to "Bulk Color Unlock"');
+
+	//Add Bulk Color
+	const extraColorInput = document.getElementById("ExtraColorInput");
+	const extraColorCard = extraColorInput.parentElement.parentElement;
+	extraColorCard.classList += " relative";
+	const extraColorTxt = [extraColorCard.children[0], extraColorCard.children[2]]; // [extraColorTitle, extraColorDesc]
+	extraColorTxt.forEach((elm) => (elm.dataset.falseTxt = elm.innerText));
+	extraColorTxt[0].dataset.trueTxt = "Bulk Color Unlock";
+	extraColorTxt[1].dataset.trueTxt =
+		"100 Pixels / color\nRight click on color to input hex code manually";
+	extraColorTxt[1].classList += " whitespace-pre-wrap";
+
+	extraColorInput.addEventListener("input", autoAddUnlockColorBulk);
+	extraColorInput.addEventListener("change", (e) => {
+		const hex = parseColor(e.target.value);
+		if (hex) {
+			if (bulkColorUnlockList.children.length == 1)
+				bulkColorUnlockList.querySelector("input[type='color']").value = hex;
+			else addBulkColorUnlock(hex);
+			extraColorInput.value = toOutputHex(hex);
+			extraColorInput.dispatchEvent(new Event("input"));
+		} else {
+			if (e.target.value) validateInput(e.target, "red");
+			resetBulkColorUnlock();
+		}
+	});
+
+	const bulkColorUnlockList = document.createElement("div");
+	bulkColorUnlockList.classList = "max-h-48 overflow-x-scroll flex flex-wrap gap-1";
+	bulkColorUnlockList.style.paddingTop = "3px";
+
+	const bulkColorAddTxtHexBtn = makeButton("✚₊", () =>
+		promptForColors((v) => v.forEach(addBulkColorUnlock), "Bulk Color Unlock"),
+	);
+	bulkColorAddTxtHexBtn.title = "Bulk Color Unlock";
+	bulkColorAddTxtHexBtn.classList = `${COLOR_CLASS.yellow} shadow transition cursor-pointer rounded-full h-8 w-8 hover:scale-105 absolute right-2 top-2`;
+
+	const bulkColorBtnLine = document.createElement("div");
+	bulkColorBtnLine.classList = "flex gap-2";
+
+	const bulkColorAddBtn = makeButton("✚", () => addBulkColorUnlock());
+	bulkColorAddBtn.classList = `${COLOR_CLASS.green} shadow transition cursor-pointer rounded-full h-8 w-8 hover:scale-105`;
+
+	const bulkColorBuyBtn = makeBasicButton("Buy", () => {
+		// would be nice to call "MakePurchase" here instead, but would have to do more work to prevent unwanted behavious
+		const hasBoughtAll = getBulkColorUnlockList().every(async (c) => {
+			const r = await fetch("https://geopixels.net/MakePurchase", {
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					Token: tokenUser,
+					UserId: userID,
+					Subject: subject,
+					type: "ExtraColor",
+					amount: rgbToGeopixelsId(hexToRgb(c)),
+				}),
+				method: "POST",
+			});
+
+			if (r.status == 401) {
+				showAlert("Unauthorized", "Your session has expired. Please log in again.");
+				return false;
+			} else if (r.status == 402) {
+				showAlert("Insufficient Pixels", "You do not have enough Pixels for this purchase.");
+				return false;
+			} else if (r.status != 200) {
+				showAlert("Error", await r.text());
+				return false;
+			}
+			return true;
+		});
+
+		if (!hasBoughtAll) log(LOG_LEVELS.error, "Error when buying Colors in bulk");
+		else log(LOG_LEVELS.info, `${getBulkColorUnlockList().length} Colors bought`);
+
+		synchronize();
+		toggleProfile();
+
+		resetBulkColorUnlock();
+	});
+	bulkColorBuyBtn.classList.replace("py-2", "py-1");
+	bulkColorBuyBtn.style.flexGrow = 1;
+
+	bulkColorBtnLine.append(bulkColorAddBtn, bulkColorBuyBtn);
+	extraColorCard.append(bulkColorUnlockList, bulkColorAddTxtHexBtn, bulkColorBtnLine);
 
 	//fix some styles
 	const style = document.createElement("style");

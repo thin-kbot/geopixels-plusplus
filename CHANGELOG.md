@@ -8,17 +8,17 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 ## [Unreleased] (todo)
 - being able to switch from multiple ghost images
 - make syncable censors
-- Buy colors by bulk or from ghost
 - pipette-like keybind to activate only that color in both palettes
 - fix grouping for Ghost colors progress
 - being able to hide "placing-pixels" edges
-- being able to buy colors from the ghost image
 - sort your colors manually
 
 ## [Unreleased] (done)
 ### Added
 - Zoom based on pixel size ([issue#3](https://github.com/thin-kbot/geopixels-plusplus/issues/3))
 - Save ghost image with position (import/export) ([issue#1](https://github.com/thin-kbot/geopixels-plusplus/issues/1))
+- Buy colors by bulk
+- add colors to Unlock directly from the "Ghost Image Settings" modal
 ### Changed
 - Use `map.easeTo` instead of `map.setCenter` and `map.setZoom` in the `gotoCoords` funtion to move smoothly
 ### Fixed
