@@ -27,6 +27,7 @@
 		error: { label: "ERR", color: "red" },
 		warn: { label: "WRN", color: "yellow" },
 		info: { label: "INF", color: "lime" },
+		log: { label: "LOG", color: "blue" },
 		debug: { label: "DBG", color: "cyan" },
 	};
 
@@ -548,7 +549,7 @@
 				}
 				log(LOG_LEVELS.debug, `Extracted coords from URL: ${coordString}`);
 			} catch (e) {
-				log(LOG_LEVELS.log, "Invalid URL format");
+				log(LOG_LEVELS.error, "Invalid URL format");
 				return;
 			}
 		} else {
