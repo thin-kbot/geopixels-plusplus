@@ -349,6 +349,8 @@
 		log(logLVL, `Ghost image position set to {x:${pos.gridX},y:${pos.gridY}}.`);
 		drawGhostImageOnCanvas();
 	}
+
+	const getUserPixelNb = () => Math.floor(userData["pixels"] / 5);
 	//#endregion Utils
 
 	//#region Color Utils
@@ -1180,6 +1182,14 @@
 		bulkColorAddBtn.hidden = nbChild < 1;
 		extraColorCard.children[3].hidden = show; // Line
 		bulkColorUnlockList.hidden = bulkColorBuyBtn.hidden = !show;
+		bulkColorBuyBtn.innerText = `Buy (${nbChild * 100}/${getUserPixelNb()})`;
+		if (nbChild * 100 > getUserPixelNb()) {
+			bulkColorBuyBtn.classList.remove("text-white");
+			bulkColorBuyBtn.classList.add("text-red-500", "font-bold");
+		} else {
+			bulkColorBuyBtn.classList.add("text-white");
+			bulkColorBuyBtn.classList.remove("text-red-500", "font-bold");
+		}
 
 		if (nbChild == 1) {
 			extraColorInput.value = toOutputHex(
@@ -1776,9 +1786,18 @@
 	const bulkColorAddBtn = makeButton("✚", () => addBulkColorUnlock());
 	bulkColorAddBtn.classList = `${COLOR_CLASS.green} shadow transition cursor-pointer rounded-full h-8 w-8 hover:scale-105`;
 
-	const bulkColorBuyBtn = makeBasicButton("Buy", () => {
-		// would be nice to call "MakePurchase" here instead, but would have to do more work to prevent unwanted behavious
-		const hasBoughtAll = getBulkColorUnlockList().every(async (c) => {
+	const bulkColorBuyBtn = makeBasicButton("Buy", async () => {
+		if (
+			bulkColorUnlockList.children.length * 100 > getUserPixelNb() &&
+			!confirm(
+				"You don't have enough pixels to buy all these colors, are you sure you want to continue?\n(if you do, you will buy the colors in order until you have no pixels left)",
+			)
+		)
+			return;
+
+		// would be nice to call "MakePurchase" here instead, but would have to do more work to prevent unwanted behaviors
+		let bought = 0;
+		for (const c of getBulkColorUnlockList()) {
 			const r = await fetch("https://geopixels.net/MakePurchase", {
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
@@ -1791,26 +1810,25 @@
 				method: "POST",
 			});
 
-			if (r.status == 401) {
-				showAlert("Unauthorized", "Your session has expired. Please log in again.");
-				return false;
-			} else if (r.status == 402) {
-				showAlert("Insufficient Pixels", "You do not have enough Pixels for this purchase.");
-				return false;
-			} else if (r.status != 200) {
+			if (r.status == 200) bought++;
+			else {
 				showAlert("Error", await r.text());
-				return false;
+				break;
 			}
-			return true;
-		});
+		}
 
-		if (!hasBoughtAll) log(LOG_LEVELS.error, "Error when buying Colors in bulk");
-		else log(LOG_LEVELS.info, `${getBulkColorUnlockList().length} Colors bought`);
+		if (bought != getBulkColorUnlockList().length)
+			log(
+				LOG_LEVELS.error,
+				`Error when buying Colors in bulk${bought ? ` (bought first ${bought} colors)` : ""}`,
+			);
+		else {
+			log(LOG_LEVELS.info, `${getBulkColorUnlockList().length} Colors bought`);
+			resetBulkColorUnlock();
+		}
 
 		synchronize();
 		toggleProfile();
-
-		resetBulkColorUnlock();
 	});
 	bulkColorBuyBtn.classList.replace("py-2", "py-1");
 	bulkColorBuyBtn.style.flexGrow = 1;
