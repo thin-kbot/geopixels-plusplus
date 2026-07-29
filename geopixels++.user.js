@@ -327,10 +327,10 @@
 		};
 	}
 
-	function validateInput(elm) {
-		elm.style.borderColor = "green";
+	function validateInput(elm, color = "green") {
+		elm.style.borderColor = color;
 		const td = parseFloat(getComputedStyle(elm).transitionDuration) * 2;
-		setTimeout(() => (elm.style.borderColor = ""), (td ?? 0.5) * 1000);
+		setTimeout(() => (elm.style.borderColor = ""), (td ? td : 0.5) * 1000);
 	}
 
 	function getAllCoordsBetween(a, b, size = 1) {
@@ -433,7 +433,7 @@
 	function isInGhostPalette(hex) {
 		hex = toFullHex(hex.slice(0, 7));
 		const is = getGhostImageHexColors().includes(hex);
-		if (!is) log(LOG_LEVELS.warn, "Color not in ghost palette:", hex);
+		if (!is) log(LOG_LEVELS.warn, `${toOutputHex(hex)} not in ghost palette:`);
 		return is;
 	}
 
@@ -909,10 +909,11 @@
 	for (const [id, val] of Object.entries(settings))
 		if (SETTINGS[id] && SETTINGS[id].apply) SETTINGS[id].apply(val);
 
+	const DEFAULT_SETTINGS_CLASS =
+		"rounded-md border-2 border-gray-200 p-2 outline-none focus:ring-2 focus:ring-gray-400 transition";
 	const SETTINGS_CLASSES = {
-		default: "rounded-md border-2 border-gray-200 sm:text-sm p-2",
-		textarea:
-			"w-full h-32 rounded-md border-2 border-gray-200 p-2 font-mono resize-vertical outline-none transition",
+		select: DEFAULT_SETTINGS_CLASS + " cursor-pointer",
+		textarea: DEFAULT_SETTINGS_CLASS + " w-full h-32 font-mono resize-vertical",
 		button:
 			"px-4 py-2 rounded-lg shadow transition cursor-pointer bg-blue-500 hover:bg-blue-600 text-white",
 		input: {
@@ -926,7 +927,7 @@
 		const baseClass =
 			typeof SETTINGS_CLASSES[s.element] === "string"
 				? SETTINGS_CLASSES[s.element]
-				: (SETTINGS_CLASSES[s.element]?.[s.attributes.type] ?? SETTINGS_CLASSES.default);
+				: (SETTINGS_CLASSES[s.element]?.[s.attributes.type] ?? DEFAULT_SETTINGS_CLASS);
 
 		const input = Object.assign(document.createElement(s.element), {
 			className: baseClass,
@@ -1060,13 +1061,13 @@
 	}
 
 	const populateColorPaletteUI_old = usw.populateColorPaletteUI;
-	usw.populateColorPaletteUI = function () {
-		populateColorPaletteUI_old();
+	usw.populateColorPaletteUI = function (...args) {
+		populateColorPaletteUI_old(...args);
 		updateGhostPaletteProgress();
 	};
 	const calculateGhostProgress_old = usw.calculateGhostProgress;
-	usw.calculateGhostProgress = function () {
-		calculateGhostProgress_old();
+	usw.calculateGhostProgress = function (...args) {
+		calculateGhostProgress_old(...args);
 		updateGhostPaletteProgress();
 	};
 	//#endregion Ghost colors progress
@@ -1130,9 +1131,9 @@
 		importGhostImage(e);
 	});
 	const loadGhostImageFromFile_old = usw.loadGhostImageFromFile;
-	usw.loadGhostImageFromFile = function (e) {
-		loadGhostImageFromFile_old(e);
-		importGhostImage(e);
+	usw.loadGhostImageFromFile = function (...args) {
+		loadGhostImageFromFile_old(...args);
+		importGhostImage(...args);
 	};
 	//#endregion Ghost Image data
 
@@ -1235,6 +1236,7 @@
 		green: "bg-green-500 hover:bg-green-600 text-white",
 		blue: "bg-blue-500 hover:bg-blue-600 text-white",
 		gray: "bg-gray-200 hover:bg-gray-300 text-gray-700",
+		yellow: "bg-yellow-500 hover:bg-yellow-600 text-white",
 	};
 	function makeBasicButton(innerText, classes = COLOR_CLASS.blue, onClick) {
 		if (typeof classes === "function") {
@@ -1339,8 +1341,7 @@
 			else button.open();
 		};
 		button.close();
-		button.className =
-			"text-white shadow transition cursor-pointer bg-yellow-500 hover:bg-yellow-600 rounded-full h-10 w-10";
+		button.className = `${COLOR_CLASS.yellow} shadow transition cursor-pointer rounded-full h-10 w-10`;
 
 		parent.append(button, ...elms);
 	}
