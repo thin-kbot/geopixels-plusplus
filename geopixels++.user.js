@@ -52,7 +52,7 @@
 			variable: "soundBufferMaxCharges",
 		},
 	];
-	let soundToChangeIdx = 0;
+	let pendingSound;
 
 	let censorRects;
 	let censorMode = false;
@@ -314,6 +314,14 @@
 			return false;
 		}
 		return true;
+	}
+
+	function waitFor(condition, callback, { interval = 100, maxTries = 100 } = {}) {
+		let tries = 0;
+		(function check() {
+			if (condition()) callback();
+			else if (tries++ < maxTries) setTimeout(check, interval);
+		})();
 	}
 
 	function screenPointToGrid(canvas, mX, mY) {
@@ -600,18 +608,8 @@
 			}
 		}
 	}
-	loadBlobSounds();
 
-	function waitForSounds(callback) {
-		let tries = 0;
-		function check() {
-			if (SOUNDS.every((s) => eval(`${s.variable} !== null`))) callback();
-			else if (tries++ < 100) setTimeout(check, 100);
-		}
-		check();
-	}
-
-	waitForSounds(loadBlobSounds);
+	waitFor(() => SOUNDS.every((s) => eval(`${s.variable} !== null`)), loadBlobSounds);
 	//#endregion Sound
 
 	//#region Censor
@@ -800,8 +798,8 @@
 		return censorRects;
 	}
 	function saveCensorRects(r) {
-		censorRects = r;
-		localStorage.setItem(STORAGE_KEYS.censor, JSON.stringify(r));
+		censorRects = Array.isArray(r) ? r : [];
+		localStorage.setItem(STORAGE_KEYS.censor, JSON.stringify(censorRects));
 		drawCensorRects();
 		document.dispatchEvent(new CustomEvent("censorRectsChanged"));
 	}
@@ -829,20 +827,14 @@
 		);
 	}
 
-	function waitForMap(callback) {
-		let tries = 0;
-		function check() {
-			if (map && map.on && map.getContainer) callback();
-			else if (tries++ < 100) setTimeout(check, 100);
-		}
-		check();
-	}
-
-	waitForMap(() => {
-		["move", "rotate", "zoom"].forEach((ev) => map.on(ev, drawCensorRects));
-		new ResizeObserver(drawCensorRects).observe(map.getContainer());
-		map.once("load", drawCensorRects);
-	});
+	waitFor(
+		() => map && map.on && map.getContainer,
+		() => {
+			["move", "rotate", "zoom"].forEach((ev) => map.on(ev, drawCensorRects));
+			new ResizeObserver(drawCensorRects).observe(map.getContainer());
+			map.once("load", drawCensorRects);
+		},
+	);
 	//#endregion Censor
 
 	//#region keybind
@@ -1382,7 +1374,7 @@
 		const modal = createModal(
 			title,
 			textarea,
-			makeBasicButton("Submit", COLOR_CLASS.blue, () => {
+			makeBasicButton("Submit", () => {
 				const value = textarea.value.trim();
 				log(LOG_LEVELS.debug, "Submitted colors:\n", value);
 				if (value) onSubmit(colorsStringToHexArray(value));
@@ -1654,7 +1646,7 @@
 	inputSoundFile.accept = "audio/*";
 	inputSoundFile.onchange = () => {
 		let blob = new Blob([inputSoundFile.files[0]]);
-		saveBlobSound(SOUNDS[soundToChangeIdx], blob);
+		saveBlobSound(pendingSound, blob);
 	};
 	document.body.appendChild(inputSoundFile);
 
@@ -1678,15 +1670,13 @@
 		makeSelectMenuButton(
 			"🎵",
 			"Change Sound",
-			SOUNDS.map((s, i) => {
-				return {
-					innerText: s.name,
-					onClick: () => {
-						soundToChangeIdx = i;
-						inputSoundFile.click();
-					},
-				};
-			}),
+			SOUNDS.map((s, i) => ({
+				innerText: s.name,
+				onClick: () => {
+					pendingSound = s;
+					inputSoundFile.click();
+				},
+			})),
 			"Choose a sound to change",
 		),
 		makeSelectMenuButton("🚫", "Censor", [
@@ -1726,7 +1716,7 @@
 						(id) => `
 							<div class="flex items-center justify-between p-2">
 								<label for="gpp_keybind-${id}" class="text-gray-600">${KEY_BINDINGS[id].text}</label>
-								<input id="gpp_keybind-${id}" type="text" maxlength="1" class="keybind-input">
+								<input id="gpp_keybind-${id}" type="text" maxLength="1" class="keybind-input">
 							</div>
 						`,
 					)
