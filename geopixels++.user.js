@@ -608,7 +608,7 @@
 		}
 	}
 
-	waitFor(() => SOUNDS.every((s) => eval(`${s.variable} !== null`)), loadBlobSounds);
+	waitFor(() => SOUNDS.every((s) => eval(`typeof ${s.variable} !== "undefined"`)), loadBlobSounds);
 	//#endregion Sound
 
 	//#region Censor
