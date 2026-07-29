@@ -18,7 +18,8 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - Zoom based on pixel size ([issue#3](https://github.com/thin-kbot/geopixels-plusplus/issues/3))
 - Save ghost image with position (import/export) ([issue#1](https://github.com/thin-kbot/geopixels-plusplus/issues/1))
 - Buy colors by bulk
-- add colors to Unlock directly from the "Ghost Image Settings" modal
+- Add colors to Unlock directly from the "Ghost Image Settings" modal
+- Login automatically using google
 ### Changed
 - Use `map.easeTo` instead of `map.setCenter` and `map.setZoom` in the `gotoCoords` funtion to move smoothly
 ### Fixed

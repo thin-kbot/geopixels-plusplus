@@ -121,6 +121,7 @@
 		keybinds: "Keybindings",
 		ghostExport: "Ghost Image export",
 		bulkColorUnlock: "Bulk Color Unlock",
+		autoGoogleLogin: "Login automatically using google",
 	};
 
 	const SETTINGS = {
@@ -305,6 +306,26 @@
 				onchange: (e) => saveSetting("doBulkColorUnlockGhostCountPlaced", e.target.checked),
 			},
 		},
+		doAutoGoogleLoginOnLoad: {
+			name: "on page load",
+			element: "input",
+			category: SETTINGS_CATEGORIES.autoGoogleLogin,
+			default: true,
+			attributes: {
+				type: "checkbox",
+				onchange: (e) => saveSetting("doAutoGoogleLoginOnLoad", e.target.checked),
+			},
+		},
+		doAutoGoogleLoginOnLogout: {
+			name: "when a request fails because you're logged out",
+			element: "input",
+			category: SETTINGS_CATEGORIES.autoGoogleLogin,
+			default: true,
+			attributes: {
+				type: "checkbox",
+				onchange: (e) => saveSetting("doAutoGoogleLoginOnLogout", e.target.checked),
+			},
+		},
 	};
 	//#endregion Global variables
 
@@ -327,12 +348,30 @@
 		return true;
 	}
 
+	function overrideFunction(funcName, newFunc) {
+		const ogFunc = usw[funcName];
+		usw[funcName] = function (...args) {
+			return newFunc.apply(this, [ogFunc.bind(this), ...args]);
+		};
+	}
+
 	function waitFor(condition, callback, { interval = 100, maxTries = 100 } = {}) {
 		let tries = 0;
 		(function check() {
 			if (condition()) callback();
 			else if (tries++ < maxTries) setTimeout(check, interval);
 		})();
+	}
+
+	function throttle(fn, delay = 100) {
+		let lastTime = 0;
+		return function (...args) {
+			let now = Date.now();
+			if (now - lastTime >= delay) {
+				fn.apply(this, args);
+				lastTime = now;
+			}
+		};
 	}
 
 	function debounce(func, delay = 100) {
@@ -1094,16 +1133,14 @@
 		}
 	}
 
-	const populateColorPaletteUI_old = usw.populateColorPaletteUI;
-	usw.populateColorPaletteUI = function (...args) {
-		populateColorPaletteUI_old(...args);
+	overrideFunction("populateColorPaletteUI", (ogFunc) => {
+		ogFunc();
 		updateGhostPaletteProgress();
-	};
-	const calculateGhostProgress_old = usw.calculateGhostProgress;
-	usw.calculateGhostProgress = function (...args) {
-		calculateGhostProgress_old(...args);
+	});
+	overrideFunction("calculateGhostProgress", (ogFunc) => {
+		ogFunc();
 		updateGhostPaletteProgress();
-	};
+	});
 	//#endregion Ghost colors progress
 
 	//#region Ghost Image data
@@ -1164,11 +1201,10 @@
 	document.getElementById("ghostImageInput").addEventListener("change", (e) => {
 		importGhostImage(e);
 	});
-	const loadGhostImageFromFile_old = usw.loadGhostImageFromFile;
-	usw.loadGhostImageFromFile = function (...args) {
-		loadGhostImageFromFile_old(...args);
-		importGhostImage(...args);
-	};
+	overrideFunction("populateColorPaletteUI", (ogFunc, ...args) => {
+		ogFunc();
+		updateGhostPaletteProgress(...args);
+	});
 	//#endregion Ghost Image data
 
 	//#region Bulk Color Unlock
@@ -1220,11 +1256,10 @@
 			.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
 		bulkColorUnlockList.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
 	});
-	const toggleGhostModal_old = usw.toggleGhostModal;
-	usw.toggleGhostModal = function (...args) {
-		toggleGhostModal_old(...args);
+	overrideFunction("toggleGhostModal", (ogFunc) => {
+		ogFunc();
 		GIM_moved = false;
-	};
+	});
 
 	function addBulkColorUnlock(hex = "", external = false) {
 		if (external) setUnlockColorBulkUI();
@@ -1315,17 +1350,67 @@
 			.filter(Boolean);
 	}
 
-	const toggleProfile_old = usw.toggleProfile;
-	usw.toggleProfile = function (...args) {
-		toggleProfile_old(...args);
+	overrideFunction("toggleProfile", (ogFunc) => {
+		ogFunc();
 		refreshUnlockColorBulk();
-	};
-	const MakePurchase_old = usw.MakePurchase;
-	usw.MakePurchase = function (...args) {
-		MakePurchase_old(...args);
+	});
+	overrideFunction("toggleGhostModal", (ogFunc, ...args) => {
+		ogFunc();
 		if (args[0] == "ExtraColor") resetBulkColorUnlock();
-	};
+	});
 	//#endregion Bulk Color Unlock
+
+	//#region Auto google login
+	const tryAutoGoogleLogin = throttle(async () => {
+		log(LOG_LEVELS.info, "trying to login automatically using google");
+
+		await new Promise((resolve) => {
+			usw.google.accounts.id.initialize({
+				client_id: document.getElementById("g_id_onload").dataset.client_id,
+				callback: async (e) => {
+					const urlParams = new URLSearchParams(window.location.search);
+
+					const r = await fetch("/auth/google", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ token: e.credential, tracker: urlParams.get("pr") }),
+					});
+					const d = await r.json();
+
+					if (!r.ok) return log(LOG_LEVELS.warn, "/auth/google error", d);
+
+					if (queuedPixelsObjects) {
+						queuedPixelsObjects.forEach((pixel) => {
+							pixel.UserId = d.id;
+						});
+					}
+					await logIn(d);
+
+					resolve();
+				},
+				auto_select: true,
+				context: "signin",
+			});
+
+			google.accounts.id.prompt();
+		});
+
+		log(LOG_LEVELS.info, `Google login ${tokenUser.length ? "succeeded" : "failed"}`);
+		return !!tokenUser.length;
+	}, 5000);
+
+	waitFor(
+		() =>
+			usw.google &&
+			(localStorage.getItem("tokenUser") == tokenUser ||
+				(localStorage.getItem("tokenUser") == null && tokenUser == "")),
+		() => !tokenUser && settings.doAutoGoogleLoginOnLoad && tryAutoGoogleLogin(),
+	);
+
+	overrideFunction("logOut", (ogFunc) => {
+		if (settings.doAutoGoogleLoginOnLogout && !tryAutoGoogleLogin()) ogFunc();
+	});
+	//#endregion Auto google login
 
 	//#region UI Helpers
 	function copyToClipboard(text) {
