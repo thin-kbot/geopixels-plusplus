@@ -354,7 +354,7 @@
 	function overrideFunction(funcName, newFunc) {
 		const ogFunc = usw[funcName];
 		usw[funcName] = function (...args) {
-			return newFunc.apply(this, [ogFunc.bind(this), ...args]);
+			return newFunc.apply(this, [ogFunc.bind(this, ...args), ...args]);
 		};
 	}
 
