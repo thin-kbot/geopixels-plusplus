@@ -1412,6 +1412,33 @@
 	});
 	//#endregion Auto google login
 
+	//#region Paint more than 5k
+	overrideFunction("placePixels", async (ogFunc) => {
+		const paintBtn = document.getElementById("commitBtn");
+		const waitStyle = {
+			cursor: "wait",
+			backgroundColor: "var(--color-blue-200)",
+			pointerEvents: "none",
+		};
+		const spinner = Object.assign(document.createElement("div"), {
+			classList: "animate-spin rounded-full border-b-4 border-blue-500 h-8 w-8",
+		});
+		paintBtn.after(spinner);
+
+		Object.assign(paintBtn.style, waitStyle);
+
+		const entries = Array.from(queuedPixelsObjects.entries());
+		for (let i = 0; i < entries.length; i += 5000) {
+			const chunk = entries.slice(i, i + 5000);
+			queuedPixelsObjects = new Map(chunk);
+			await ogFunc();
+		}
+
+		Object.assign(paintBtn.style, Object.fromEntries(Object.keys(waitStyle).map((k) => [k, null])));
+		spinner.remove();
+	});
+	//#endregion Paint more than 5k
+
 	//#region UI Helpers
 	function copyToClipboard(text) {
 		log(LOG_LEVELS.info, "Copied text to clipboard:\n", text);

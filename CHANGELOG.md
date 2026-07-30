@@ -20,6 +20,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - Buy colors by bulk
 - Add colors to Unlock directly from the "Ghost Image Settings" modal
 - Login automatically using google
+- Paint by 5000 pixels chunks to allow painting more than 5k at a time
 ### Changed
 - Use `map.easeTo` instead of `map.setCenter` and `map.setZoom` in the `gotoCoords` funtion to move smoothly
 ### Fixed
