@@ -24,11 +24,11 @@
 	const usw = unsafeWindow;
 
 	const LOG_LEVELS = {
-		error: { label: "ERR", color: "red" },
-		warn: { label: "WRN", color: "yellow" },
-		info: { label: "INF", color: "lime" },
-		log: { label: "LOG", color: "blue" },
-		debug: { label: "DBG", color: "cyan" },
+		error: { label: "ERR", color: "red", fn: "error" },
+		warn: { label: "WRN", color: "yellow", fn: "warn" },
+		info: { label: "INF", color: "lime", fn: "info" },
+		log: { label: "LOG", color: "blue", fn: "log" },
+		debug: { label: "DBG", color: "cyan", fn: "debug" },
 	};
 
 	const STORAGE_KEYS = {
@@ -331,7 +331,7 @@
 
 	//#region Utils
 	function log(lvl, ...args) {
-		console.log(
+		console[lvl.fn](
 			`%c[GeoPixels++] %c[${lvl.label}]`,
 			"color: mediumvioletred;",
 			`color:${lvl.color};`,

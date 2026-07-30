@@ -12,6 +12,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - fix grouping for Ghost colors progress
 - being able to hide "placing-pixels" edges
 - sort your colors manually
+- notification system based on `log()`
 
 ## [Unreleased] (done)
 ### Added
