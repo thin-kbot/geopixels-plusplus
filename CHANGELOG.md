@@ -14,6 +14,10 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - sort your colors manually
 - notification system based on `log()`
 
+## [Unreleased] (done)
+### Fixed
+- Fix Google's auto prompt UI
+
 ## [0.8.0] - 2026-07-30
 ### Added
 - Zoom based on pixel size ([issue#3](https://github.com/thin-kbot/geopixels-plusplus/issues/3))
