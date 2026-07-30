@@ -5,7 +5,7 @@
 // @contributor     Observable
 // @contributor     Phlegethonia
 // @contributor     h65e3j
-// @version         0.7.0
+// @version         0.8.0
 // @match           https://*.geopixels.net/*
 // @namespace       https://github.com/thin-kbot
 // @homepage        https://github.com/thin-kbot/geopixels-plusplus
@@ -82,7 +82,7 @@
 			keydown: () => toggleCensorMode(),
 		},
 		addCensorRect: {
-			text: "Add one Censor Rect at Mouse",
+			text: "Add Censor Rect at Mouse (hold)",
 			defaultKey: "l",
 			keydown: (e) => {
 				if (e.repeat) return;

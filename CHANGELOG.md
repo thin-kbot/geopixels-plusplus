@@ -14,7 +14,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - sort your colors manually
 - notification system based on `log()`
 
-## [Unreleased] (done)
+## [0.8.0] - 2026-07-30
 ### Added
 - Zoom based on pixel size ([issue#3](https://github.com/thin-kbot/geopixels-plusplus/issues/3))
 - Save ghost image with position (import/export) ([issue#1](https://github.com/thin-kbot/geopixels-plusplus/issues/1))

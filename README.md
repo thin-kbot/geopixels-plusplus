@@ -1,16 +1,24 @@
 # GeoPixels++
 A bunch of QOL features for [GeoPixels](https://geopixels.net/) :
-- Add buttons to the ghost's UI ("Enable Only Owned Ghost Colors", "Get Ghost Colors", "Get Enabled Ghost Colors", "Set Enabled Ghost Colors")
-- Add buttons to the shop/profile UI ("Get User Colors", "Get Enabled Colors", "Set Enabled Colors")
 - Add a main menu item `GeoPxels++` with the these buttons :
   - `🎯` "Go to Coordinates" : moves to given coordinates (accepts coordinates or GeoPixels URLs)
   - `🧪` "Set Both Palettes" : sets user and ghost palettes simultaneously
   - `🎵` "Change Sound" : change the sounds of the website
   - `🚫` "Censor" : ability to censor part of the canvas
-    - "Toggle censor mode" : enter "censor mode" => draw censor rectangles directly on the canvas
+    - "Toggle censor mode" : enter "censor mode" => draw censor rectangles directly on the canvas (you can also directly draw censors with a keybind)
   - `⚙️` "Settings"
-- Add new keybinds (see/change them in the settings or in geopixels' "Keyboard Shortcut" menu)
-- Ghost Image's progress by color
+- Add new keybinds `⌨️` :
+  - "Toggle ghost image"
+  - "Set ghost image's top left"
+  - "Toggle Censor Mode"
+  - "Add Censor Rect at Mouse (hold)"
+- See your Ghost Image's progress by color
+- Pixel perfect zoom
+- Import/Export your Ghost Images
+- Bulk color unlock and unlock directly from the ghost's UI
+- Go over max paint limit (5000)
+- Add buttons to the ghost's UI ("Enable Only Owned Ghost Colors", "Get Ghost Colors", "Get Enabled Ghost Colors", "Set Enabled Ghost Colors")
+- Add buttons to the shop/profile UI ("Get User Colors", "Get Enabled Colors", "Set Enabled Colors")
 
 ## installation
 1. install [Violentmonkey](https://violentmonkey.github.io/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/jinjaccalgkegednnccohejagnlnfdag)) or [Tampermonkey](https://www.tampermonkey.net/) ([![Firefox Addons](https://www.readmecodegen.com/api/social-icon?name=firefoxbrowser&size=16)](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)/[![Chrome webstore](https://www.readmecodegen.com/api/social-icon?name=chromewebstore&size=16)](https://chromewebstore.google.com/detail/dhdgffkkebhmkfjojejmpbldmpobfkfo))
