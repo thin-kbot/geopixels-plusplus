@@ -17,6 +17,7 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 ## [Unreleased] (done)
 ### Fixed
 - Fix Google's auto prompt UI
+- Fix settings with `select` element not getting set properly
 
 ## [0.8.0] - 2026-07-30
 ### Added

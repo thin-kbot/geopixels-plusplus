@@ -999,7 +999,18 @@
 				? SETTINGS_CLASSES[s.element]
 				: (SETTINGS_CLASSES[s.element]?.[s.attributes.type] ?? DEFAULT_SETTINGS_CLASS);
 
-		const input = Object.assign(document.createElement(s.element), {
+		const input = document.createElement(s.element);
+		if (s.element == "select")
+			input.append(
+				...s.options.map(({ value, text }) =>
+					Object.assign(document.createElement("option"), {
+						value,
+						innerText: text,
+					}),
+				),
+			);
+
+		Object.assign(input, {
 			className: baseClass,
 			...s.attributes,
 			[s.attributes.type === "checkbox" ? "checked" : "value"]: s.value?.() ?? settings[key],
@@ -1010,17 +1021,6 @@
 		if (s.element == "button") {
 			input.innerText = s.name;
 			return input;
-		}
-
-		if (s.element == "select") {
-			input.append(
-				...s.options.map(({ value, text }) =>
-					Object.assign(document.createElement("option"), {
-						value,
-						innerText: text,
-					}),
-				),
-			);
 		}
 
 		const label = document.createElement("label");
