@@ -1254,10 +1254,9 @@
 			setTimeout(() => (ghostImageModal.style.transition = null), 200);
 			GIM_moved = true;
 		}
-		document
-			.getElementById("profilePanel")
-			.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-		bulkColorUnlockList.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+		const profilePanel = document.getElementById("profilePanel");
+		profilePanel.scrollTo({ top: profilePanel.scrollHeight, behavior: "smooth" });
+		bulkColorUnlockList.scrollTo({ top: bulkColorUnlockList.scrollHeight, behavior: "smooth" });
 	});
 	overrideFunction("toggleGhostModal", (ogFunc) => {
 		ogFunc();
