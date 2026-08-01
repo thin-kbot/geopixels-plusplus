@@ -19,11 +19,15 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - Load gpp only once (idk why it happened sometimes, but now the script can't load more than once)
 - Wait animation for buttons
 - If placing pixels (painting) fails when placing more than 5k, keep the queued pixels to retry
+- Bulk Color Unlock "Remove all" Button
 ### Fixed
 - Fix Google's auto prompt UI
 - Fix settings with `select` element not getting set properly
 - Fix `overrideFunction` not passing arguments
 - Fix "Bulk Color Unlock" auto scroll
+- Bulk Color Unlock: Fix adding invalid hex using website's input with `autoAddUnlockColorBulk`
+- Bulk Color Unlock: Fix last bought color staying in website's input
+- Bulk Color Unlock: Fix Buying failing because of fetching full url instead of just endpoint
 
 ## [0.8.0] - 2026-07-30
 ### Added

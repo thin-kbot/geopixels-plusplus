@@ -1236,14 +1236,14 @@
 	//#endregion Ghost Image data
 
 	//#region Bulk Color Unlock
-	function refreshUnlockColorBulk(show = null) {
+	const refreshUnlockColorBulk = debounce((show = null) => {
 		const nbChild = bulkColorUnlockList.children.length;
 		if (show === null) show = nbChild > 1;
 
 		extraColorTxt.forEach((elm) => (elm.innerHTML = elm.dataset[`${show}Txt`]));
 		bulkColorAddBtn.hidden = nbChild < 1;
 		extraColorCard.children[3].hidden = show; // Line
-		bulkColorUnlockList.hidden = bulkColorBuyBtn.hidden = !show;
+		bulkColorUnlockList.hidden = bulkColorBuyBtn.hidden = bulkColorResetBtn.hidden = !show;
 		bulkColorBuyBtn.innerText = `Buy (${nbChild * 100}/${getUserPixelNb()})`;
 		if (nbChild * 100 > getUserPixelNb()) {
 			bulkColorBuyBtn.classList.remove("text-white");
@@ -1253,13 +1253,12 @@
 			bulkColorBuyBtn.classList.remove("text-red-500", "font-bold");
 		}
 
-		if (nbChild == 1) {
+		if (nbChild == 1)
 			extraColorInput.value = toOutputHex(
 				bulkColorUnlockList.querySelector("input[type='color']")?.value ?? "",
 			);
-			extraColorInput.dispatchEvent(new Event("input"));
-		}
-	}
+		if (!show) extraColorInput.dispatchEvent(new Event("input"));
+	});
 
 	function autoAddUnlockColorBulk(e) {
 		if (/^#?([\da-f]{6}(?:[\da-f]{2})?|[\da-f]{3,4})[^a-zA-Z0-9#]$/i.test(e.target.value)) {
@@ -1288,15 +1287,20 @@
 		GIM_moved = false;
 	});
 
+	function canUnlockColor(hex) {
+		if (isInUserPalette(hex, false)) return false;
+		if (getBulkColorUnlockList().includes(hex)) {
+			log(LOG_LEVELS.warn, `${hex} already in the list`);
+			return false;
+		}
+		return true;
+	}
+
 	function addBulkColorUnlock(hex = "", external = false) {
 		if (external) setUnlockColorBulkUI();
 
 		hex = toFullHex(toOutputHex(hex));
-		if (isInUserPalette(hex, false)) return;
-		if (getBulkColorUnlockList().includes(hex)) {
-			log(LOG_LEVELS.warn, `${hex} already in the list`);
-			return;
-		}
+		if (!canUnlockColor(hex)) return;
 
 		const line = document.createElement("div");
 		line.classList = "inline-block relative";
@@ -1336,9 +1340,8 @@
 		function inputChange() {
 			if (inputText.hidden) return;
 			const hex = parseColor(inputText.value);
-			if (!inputText.value || getBulkColorUnlockList().includes(hex) || isInUserPalette(hex, false))
-				removeBulkColorUnlock(line);
-			if (hex) {
+			if (!inputText.value || !canUnlockColor(hex)) removeBulkColorUnlock(line);
+			else if (hex) {
 				inputColor.value = hex;
 				toggleInput(false);
 			} else validateInput(inputText, "red");
@@ -1360,6 +1363,7 @@
 
 	function removeBulkColorUnlock(line) {
 		line.remove();
+		if (bulkColorUnlockList.children.length == 0) extraColorInput.value = "";
 		refreshUnlockColorBulk();
 	}
 
@@ -1957,7 +1961,7 @@
 	extraColorInput.addEventListener("input", autoAddUnlockColorBulk);
 	extraColorInput.addEventListener("change", (e) => {
 		const hex = parseColor(e.target.value);
-		if (hex) {
+		if (hex && canUnlockColor(hex)) {
 			if (bulkColorUnlockList.children.length == 1)
 				bulkColorUnlockList.querySelector("input[type='color']").value = hex;
 			else addBulkColorUnlock(hex);
@@ -1983,7 +1987,12 @@
 	bulkColorBtnLine.classList = "flex gap-2";
 
 	const bulkColorAddBtn = makeButton("✚", () => addBulkColorUnlock());
-	bulkColorAddBtn.classList = `${COLOR_CLASS.green} shadow transition cursor-pointer rounded-full h-8 w-8 hover:scale-105`;
+	bulkColorAddBtn.classList = `${COLOR_CLASS.green} shadow transition cursor-pointer rounded-full h-8 w-8 hover:scale-105 flex-shrink-0`;
+	bulkColorAddBtn.title = "Add color";
+
+	const bulkColorResetBtn = makeButton("🗑️", () => resetBulkColorUnlock());
+	bulkColorResetBtn.classList = `${COLOR_CLASS.red} shadow transition cursor-pointer rounded-full h-8 w-8 hover:scale-105 flex-shrink-0`;
+	bulkColorResetBtn.title = "Remove all";
 
 	const bulkColorBuyBtn = makeBasicButton("Buy", async () => {
 		if (
@@ -1994,35 +2003,41 @@
 		)
 			return;
 
+		const endWait = waitInput(bulkColorBuyBtn);
+
 		// would be nice to call "MakePurchase" here instead, but would have to do more work to prevent unwanted behaviors
 		let bought = 0;
 		for (const c of getBulkColorUnlockList()) {
-			const r = await fetch("https://geopixels.net/MakePurchase", {
+			const r = await fetch("/MakePurchase", {
+				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					Token: tokenUser,
 					UserId: userID,
 					Subject: subject,
 					type: "ExtraColor",
-					amount: rgbToGeopixelsId(hexToRgb(c)),
+					amount: rgbToGeopixelsId(hexToRgba(c)),
 				}),
-				method: "POST",
 			});
 
-			if (r.status == 200) bought++;
-			else {
-				showAlert("Error", await r.text());
+			if (r.status == 200) {
+				bought++;
+				removeBulkColorUnlock(bulkColorUnlockList.children[0]);
+			} else {
+				log(LOG_LEVELS.error, "fetch error:", await r.text());
 				break;
 			}
 		}
 
-		if (bought != getBulkColorUnlockList().length)
+		endWait();
+
+		if (getBulkColorUnlockList().length)
 			log(
 				LOG_LEVELS.error,
-				`Error when buying Colors in bulk${bought ? ` (bought first ${bought} colors)` : ""}`,
+				`Error when buying Colors in bulk${bought ? ` (bought ${bought}/${bought + getBulkColorUnlockList().length} colors)` : ""}`,
 			);
 		else {
-			log(LOG_LEVELS.info, `${getBulkColorUnlockList().length} Colors bought`);
+			log(LOG_LEVELS.info, `${bought} Colors bought`);
 			resetBulkColorUnlock();
 		}
 
@@ -2030,9 +2045,11 @@
 		toggleProfile();
 	});
 	bulkColorBuyBtn.classList.replace("py-2", "py-1");
+	bulkColorBuyBtn.classList.add("whitespace-nowrap", "overflow-hidden");
 	bulkColorBuyBtn.style.flexGrow = 1;
+	bulkColorBuyBtn.style.textOverflow = "ellipsis";
 
-	bulkColorBtnLine.append(bulkColorAddBtn, bulkColorBuyBtn);
+	bulkColorBtnLine.append(bulkColorAddBtn, bulkColorBuyBtn, bulkColorResetBtn);
 	extraColorCard.append(bulkColorUnlockList, bulkColorAddTxtHexBtn, bulkColorBtnLine);
 
 	//fix some styles
