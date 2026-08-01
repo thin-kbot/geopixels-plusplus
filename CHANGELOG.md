@@ -13,8 +13,9 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - being able to hide "placing-pixels" edges
 - sort your colors manually
 - notification system based on `log()`
+- reimplement png-chunk-text, png-chunks-extract & png-chunks-encode to remove @include
 
-## [Unreleased] (done)
+## [0.8.1] - 2026-08-01
 ### Added
 - Load gpp only once (idk why it happened sometimes, but now the script can't load more than once)
 - Wait animation for buttons

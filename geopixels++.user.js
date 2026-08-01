@@ -5,7 +5,7 @@
 // @contributor     Observable
 // @contributor     Phlegethonia
 // @contributor     h65e3j
-// @version         0.8.0
+// @version         0.8.1
 // @match           https://*.geopixels.net/*
 // @namespace       https://github.com/thin-kbot
 // @homepage        https://github.com/thin-kbot/geopixels-plusplus
@@ -1426,10 +1426,10 @@
 			});
 
 			usw.google.accounts.id.prompt((n) => {
-				if (n.isNotDisplayed() || n.isSkippedMoment()) return;
-				document
-					.querySelector("#credential_picker_container")
-					.style.setProperty("display", "block", "important");
+				if (n.isDisplayed())
+					document
+						.querySelector("#credential_picker_container")
+						?.style.setProperty("display", "block", "important");
 			});
 		});
 
