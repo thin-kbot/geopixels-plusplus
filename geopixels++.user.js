@@ -447,6 +447,7 @@
 	const cToHex = (c) => (+c).toString(16).padStart(2, "0");
 	const hexToC = (h) => parseInt(h, 16);
 	const rgbToGeopixelsId = ({ r, g, b }) => (r << 16) + (g << 8) + b;
+	const geopixelsIdToRgb = (id) => ({ r: (id >> 16) & 0xff, g: (id >> 8) & 0xff, b: id & 0xff });
 	function toFullHex(hex) {
 		hex = hex.toLowerCase();
 		if (hex.length === 4 || hex.length === 5)
@@ -455,8 +456,12 @@
 		return hex;
 	}
 	const toOutputHex = (hex) => toFullHex(hex).slice(0, 7);
-	const rgbaToHex = (r, g, b, a = 255) => "#" + cToHex(r) + cToHex(g) + cToHex(b) + cToHex(a);
+	const rgbaToHex = ({ r, g, b, a = 255 }) => "#" + [r, g, b, a].map(cToHex).join("");
 	const rgbToRgbaString = ({ r, g, b }) => `rgba(${r},${g},${b},1)`;
+	const rgbaStringToRgba = (rgbaStr) => {
+		const c = rgbaStr.match(/\d+/g);
+		return { r: c[0], g: c[1], b: c[2], a: c[3] ?? 255 };
+	};
 	function hexToRgba(hex) {
 		const h = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})?$/i.exec(hex);
 		return { r: hexToC(h[1]), g: hexToC(h[2]), b: hexToC(h[3]), a: h[4] ? hexToC(h[4]) : 255 };
@@ -519,7 +524,7 @@
 
 	function getEnabledGhostPalette() {
 		if (ghostActivePaletteColors && ghostActivePaletteColors.size > 0)
-			return Array.from(ghostActivePaletteColors).map((rgba) => rgbaToHex(...rgba.match(/\d+/g)));
+			return Array.from(ghostActivePaletteColors).map((rgba) => rgbaToHex(rgbaStringToRgba(rgba)));
 
 		log(LOG_LEVELS.info, "No ghost colors enabled");
 		return [];
@@ -549,7 +554,7 @@
 		if (e.target.tagName != "BUTTON") return;
 		e.preventDefault();
 
-		const color = rgbaToHex(...e.target.dataset.colorRgba.match(/\d+/g));
+		const color = rgbaToHex(rgbaStringToRgba(e.target.dataset.colorRgba));
 
 		addBulkColorUnlock(color, true);
 	});
@@ -1114,10 +1119,12 @@
 		const ghostData = ghostImageOriginalData.data;
 		const matchingColorMap = new Map();
 
+		const getRgba = (d, i) => ({ r: d[i], g: d[i + 1], b: d[i + 2], a: d[i + 3] });
+
 		for (let i = 0; i < ghostData.length; i += 4) {
 			if (ghostData[i + 3] <= 1) continue;
-			const mapHex = rgbaToHex(mapData[i], mapData[i + 1], mapData[i + 2], mapData[i + 3]);
-			const hex = rgbaToHex(ghostData[i], ghostData[i + 1], ghostData[i + 2], ghostData[i + 3]);
+			const mapHex = rgbaToHex(getRgba(mapData, i));
+			const hex = rgbaToHex(getRgba(ghostData, i));
 			if (hex == mapHex) matchingColorMap.set(hex, (matchingColorMap.get(hex) ?? 0) + 1);
 		}
 
