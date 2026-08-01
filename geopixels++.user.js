@@ -20,9 +20,11 @@
 // ==/UserScript==
 
 (function () {
-	//#region Global variables
 	const usw = unsafeWindow;
 
+	if (usw.GPPLoaded) return;
+
+	//#region Global variables
 	const LOG_LEVELS = {
 		error: { label: "ERR", color: "red", fn: "error" },
 		warn: { label: "WRN", color: "yellow", fn: "warn" },
@@ -2003,5 +2005,6 @@
 
 	//#endregion UI
 
+	usw.GPPLoaded = true;
 	log(LOG_LEVELS.info, "GeoPixels++ loaded");
 })();

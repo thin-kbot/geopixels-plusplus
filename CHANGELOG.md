@@ -15,6 +15,8 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 - notification system based on `log()`
 
 ## [Unreleased] (done)
+### Added
+- Load gpp only once (idk why it happened sometimes, but now the script can't load more than once)
 ### Fixed
 - Fix Google's auto prompt UI
 - Fix settings with `select` element not getting set properly
