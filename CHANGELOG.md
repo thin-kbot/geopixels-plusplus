@@ -17,6 +17,8 @@ and this project adheres to [ZeroVer](https://0ver.org/) versioning.
 ## [Unreleased] (done)
 ### Added
 - Load gpp only once (idk why it happened sometimes, but now the script can't load more than once)
+- Wait animation for buttons
+- If placing pixels (painting) fails when placing more than 5k, keep the queued pixels to retry
 ### Fixed
 - Fix Google's auto prompt UI
 - Fix settings with `select` element not getting set properly

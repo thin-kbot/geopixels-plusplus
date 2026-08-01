@@ -358,6 +358,7 @@
 		usw[funcName] = function (...args) {
 			return newFunc.apply(this, [ogFunc.bind(this, ...args), ...args]);
 		};
+		return ogFunc;
 	}
 
 	function waitFor(condition, callback, { interval = 100, maxTries = 100 } = {}) {
@@ -406,6 +407,21 @@
 		elm.style.borderColor = color;
 		const td = parseFloat(getComputedStyle(elm).transitionDuration) * 2;
 		setTimeout(() => (elm.style.borderColor = ""), (td ? td : 0.5) * 1000);
+	}
+
+	function waitInput(elm) {
+		const waitStyle = { cursor: "wait", opacity: ".5", pointerEvents: "none" };
+		const ogStyle = Object.fromEntries(Object.keys(waitStyle).map((k) => [k, elm.style[k]]));
+		const spinner = Object.assign(document.createElement("div"), {
+			classList: "animate-spin rounded-full border-b-4 border-blue-500 h-8 w-8",
+		});
+		elm.after(spinner);
+		Object.assign(elm.style, waitStyle);
+
+		return () => {
+			Object.assign(elm.style, ogStyle);
+			spinner.remove();
+		};
 	}
 
 	function getAllCoordsBetween(a, b, size = 1) {
@@ -1425,28 +1441,42 @@
 
 	//#region Paint more than 5k
 	overrideFunction("placePixels", async (ogFunc) => {
-		const paintBtn = document.getElementById("commitBtn");
-		const waitStyle = {
-			cursor: "wait",
-			backgroundColor: "var(--color-blue-200)",
-			pointerEvents: "none",
-		};
-		const spinner = Object.assign(document.createElement("div"), {
-			classList: "animate-spin rounded-full border-b-4 border-blue-500 h-8 w-8",
-		});
-		paintBtn.after(spinner);
+		const endWait = waitInput(document.getElementById("commitBtn"));
 
-		Object.assign(paintBtn.style, waitStyle);
+		let lastResponse;
+		const ogFetch = overrideFunction("fetch", async (ogFunc, ...args) => {
+			const r = await ogFunc();
+			if (args[0].includes("/PlacePixels")) lastResponse = r.clone();
+			return r;
+		});
+
+		const queuedPixels_og = new Map(queuedPixels);
+		const queuedCorners_og = new Map(queuedCorners);
+
+		function pixelPlacingError(t, i) {
+			log(LOG_LEVELS.error, "Error when placing pixels:", t);
+			queuedPixelsObjects = new Map(entries.slice(i));
+			queuedPixels_og.forEach((v, k) => queuedPixelsObjects.has(k) && queuedPixels.set(k, v));
+			queuedCorners_og.forEach((v, k) => queuedPixelsObjects.has(k) && queuedCorners.set(k, v));
+			drawQueuedAndPreviewPixelsOnCanvas();
+		}
 
 		const entries = Array.from(queuedPixelsObjects.entries());
 		for (let i = 0; i < entries.length; i += 5000) {
-			const chunk = entries.slice(i, i + 5000);
-			queuedPixelsObjects = new Map(chunk);
-			await ogFunc();
+			try {
+				queuedPixelsObjects = new Map(entries.slice(i, i + 5000));
+				await ogFunc();
+				const t = await lastResponse.text();
+				if (!lastResponse.ok || t !== "Ok") throw new Error(t);
+			} catch (e) {
+				pixelPlacingError(e, i);
+				break;
+			}
 		}
 
-		Object.assign(paintBtn.style, Object.fromEntries(Object.keys(waitStyle).map((k) => [k, null])));
-		spinner.remove();
+		usw.fetch = ogFetch;
+
+		endWait();
 	});
 	//#endregion Paint more than 5k
 
